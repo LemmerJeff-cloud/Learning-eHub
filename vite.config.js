@@ -3,5 +3,5 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/', // change to '/ehub/' if deploying to GitHub Pages subfolder
+  base: '/Learning-eHub/', // sous-dossier GitHub Pages (github.com/LemmerJeff-cloud/Learning-eHub)
 })
