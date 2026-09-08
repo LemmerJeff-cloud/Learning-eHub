@@ -1457,3 +1457,30 @@ as $$
       where e.id = target_entreprise_id and ec.enseignant_id = auth.uid()
     ))
 $$;
+
+-- ── SÉCURITÉ : CONTENU DE COURS ENTIÈREMENT PUBLIC (2026-09-08) ─────────────
+-- chapitres/sections_cours/exercices/exercice_blocks avaient une lecture "using (true)" —
+-- littéralement n'importe qui, sans compte, pouvait lire tout le contenu pédagogique via l'API
+-- Supabase (l'anon key est de toute façon visible dans le bundle JS déployé). Le commentaire
+-- d'origine ("protégé côté app par le check de connexion") ne protégeait que l'interface, pas la
+-- donnée. Restreint maintenant aux comptes actifs (is_active()) — aucun changement de
+-- comportement pour un utilisateur normal de l'app, qui est de toute façon connecté.
+-- Noms réels vérifiés via pg_policies (divergent de la création d'origine plus haut dans ce
+-- fichier — "cours_public_read"/"sections_public_read"/"exercices_public_read" — probablement
+-- renommées depuis via le dashboard Supabase sans que ce fichier ne soit mis à jour) :
+-- cours_read / sections_read / exercices_read / exercice_blocks_read.
+drop policy "cours_read" on chapitres;
+create policy "cours_authenticated_read" on chapitres
+  for select using (is_active());
+
+drop policy "sections_read" on sections_cours;
+create policy "sections_authenticated_read" on sections_cours
+  for select using (is_active());
+
+drop policy "exercices_read" on exercices;
+create policy "exercices_authenticated_read" on exercices
+  for select using (is_active());
+
+drop policy "exercice_blocks_read" on exercice_blocks;
+create policy "exercice_blocks_authenticated_read" on exercice_blocks
+  for select using (is_active());
