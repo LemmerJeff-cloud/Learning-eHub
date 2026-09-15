@@ -14,6 +14,7 @@ import ReponseNumeriqueEditor from './editors/ReponseNumeriqueEditor'
 import CategorisationEditor from './editors/CategorisationEditor'
 import TableauCalculEditor from './editors/TableauCalculEditor'
 import JournalEditor from './editors/JournalEditor'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 const TYPES = [
   { value: 'libre', label: 'Réponse libre (correction manuelle)' },
@@ -93,6 +94,7 @@ function validate(type, options, correction, showToast) {
 }
 
 export default function ExerciceModal({ exercice, sectionId, chapitreId, blockId, nextOrdre, onClose, onSaved, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const { visibleFilieres } = useAuth()
   const [titre, setTitre]     = useState(exercice?.titre || '')
   const [type, setType]       = useState(exercice?.type || 'libre')
@@ -152,7 +154,7 @@ export default function ExerciceModal({ exercice, sectionId, chapitreId, blockId
   const TypeEditor = TYPE_EDITORS[type]
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{exercice ? "Modifier l'exercice" : 'Nouvel exercice'}</h2>

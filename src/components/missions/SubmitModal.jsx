@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 const BUCKET = 'missions-fichiers'
 
 export default function SubmitModal({ mission, existing, userId, onClose, onSaved, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const [commentaire, setCommentaire] = useState(existing?.commentaire || '')
   const [file, setFile]               = useState(null)
   const [loading, setLoading]         = useState(false)
@@ -39,7 +41,7 @@ export default function SubmitModal({ mission, existing, userId, onClose, onSave
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{mission.titre}</h2>

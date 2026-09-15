@@ -3,8 +3,10 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/AuthContext'
 import MiniRichEditor from '../admin/MiniRichEditor'
 import FiliereCheckboxes from '../admin/FiliereCheckboxes'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 export default function ExerciceBlockModal({ block, sectionId, chapitreId, nextOrdre, onClose, onSaved, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const { visibleFilieres } = useAuth()
   const [titre, setTitre]           = useState(block?.titre || '')
   const [description, setDescription] = useState(block?.description?.html || '')
@@ -38,7 +40,7 @@ export default function ExerciceBlockModal({ block, sectionId, chapitreId, nextO
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{block ? 'Modifier le bloc' : "Nouveau bloc d'exercices"}</h2>

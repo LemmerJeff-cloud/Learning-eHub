@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import ConfirmModal from './ConfirmModal'
 import ClasseDetail from './ClasseDetail'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 export default function AdminLycees({ showToast }) {
   const [lycees, setLycees]   = useState([])
@@ -137,6 +138,7 @@ function LyceeDetail({ lycee, onClose, showToast }) {
 }
 
 function LyceeModal({ lycee, onClose, onSaved, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const [nom, setNom]         = useState(lycee?.nom || '')
   const [loading, setLoading] = useState(false)
 
@@ -163,7 +165,7 @@ function LyceeModal({ lycee, onClose, onSaved, showToast }) {
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{lycee ? 'Modifier le lycée' : 'Nouveau lycée'}</h2>

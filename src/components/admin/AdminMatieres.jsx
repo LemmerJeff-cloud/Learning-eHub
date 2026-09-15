@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/AuthContext'
 import ConfirmModal from './ConfirmModal'
 import EmojiPicker from './EmojiPicker'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 export default function AdminMatieres({ showToast }) {
   const { isAdmin } = useAuth()
@@ -181,6 +182,7 @@ function MatiereDetail({ matiere, onClose, showToast }) {
 }
 
 function MatiereModal({ matiere, onClose, onSaved, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const [nom, setNom]         = useState(matiere?.nom || '')
   const [emoji, setEmoji]     = useState(matiere?.emoji || '📘')
   const [loading, setLoading] = useState(false)
@@ -210,7 +212,7 @@ function MatiereModal({ matiere, onClose, onSaved, showToast }) {
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{matiere ? 'Modifier la matière' : 'Nouvelle matière'}</h2>

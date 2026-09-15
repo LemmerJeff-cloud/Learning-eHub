@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
+import { useOverlayClose } from '../lib/useOverlayClose'
 
 const ROLES = [
   { value: 'eleve', label: 'Élève' },
@@ -9,6 +10,7 @@ const ROLES = [
 ]
 
 export default function SignupModal({ onClose, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const { signUpSelf } = useAuth()
   const [prenom, setPrenom]     = useState('')
   const [email, setEmail]       = useState('')
@@ -80,7 +82,7 @@ export default function SignupModal({ onClose, showToast }) {
 
   if (done) {
     return (
-      <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+      <div className="modal-overlay open" {...overlayClose}>
         <div className="modal">
           <button className="modal-close" onClick={onClose}>✕</button>
           <h2>Compte créé</h2>
@@ -94,7 +96,7 @@ export default function SignupModal({ onClose, showToast }) {
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>Créer un compte</h2>

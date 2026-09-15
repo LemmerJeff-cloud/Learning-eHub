@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import ConfirmModal from './ConfirmModal'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 export default function AdminFilieres({ showToast }) {
   const [filieres, setFilieres] = useState([])
@@ -82,6 +83,7 @@ export default function AdminFilieres({ showToast }) {
 }
 
 function FiliereModal({ filiere, onClose, onSaved, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const [code, setCode]       = useState(filiere?.code || '')
   const [label, setLabel]     = useState(filiere?.label || '')
   const [couleur, setCouleur] = useState(filiere?.couleur || '#1B2A6B')
@@ -112,7 +114,7 @@ function FiliereModal({ filiere, onClose, onSaved, showToast }) {
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{filiere ? 'Modifier la filière' : 'Nouvelle filière'}</h2>

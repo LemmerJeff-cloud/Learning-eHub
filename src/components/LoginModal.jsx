@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
 import { useAuth } from '../lib/AuthContext'
 import SignupModal from './SignupModal'
+import { useOverlayClose } from '../lib/useOverlayClose'
 
 export default function LoginModal({ onClose, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const { signIn, requestPasswordReset } = useAuth()
   const [email, setEmail]     = useState('')
   const [password, setPassword] = useState('')
@@ -45,7 +47,7 @@ export default function LoginModal({ onClose, showToast }) {
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>Connexion EHub</h2>

@@ -3,8 +3,10 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/AuthContext'
 import FiliereCheckboxes from './FiliereCheckboxes'
 import EmojiPicker from './EmojiPicker'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 export default function ChapitreModal({ chapitre, matiereId, onClose, onSaved, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const { visibleFilieres, canEditMatiere } = useAuth()
   const [titre, setTitre]             = useState(chapitre?.titre_fr || '')
   const [emoji, setEmoji]             = useState(chapitre?.emoji || '📖')
@@ -55,7 +57,7 @@ export default function ChapitreModal({ chapitre, matiereId, onClose, onSaved, s
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{chapitre ? 'Modifier le chapitre' : 'Nouveau chapitre'}</h2>

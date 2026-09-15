@@ -4,6 +4,7 @@ import { useAuth } from '../../lib/AuthContext'
 import ConfirmModal from './ConfirmModal'
 import FiliereCheckboxes from './FiliereCheckboxes'
 import LyceeCheckboxes from './LyceeCheckboxes'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 const BUCKET = 'content-images'
 
@@ -111,6 +112,7 @@ export default function AdminActualites({ showToast }) {
 }
 
 function ActualiteModal({ actualite, userId, onClose, onSaved, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const [titre, setTitre]             = useState(actualite?.titre || '')
   const [description, setDescription] = useState(actualite?.description || '')
   const [dateAffichee, setDateAffichee] = useState(actualite?.date_affichee || '')
@@ -171,7 +173,7 @@ function ActualiteModal({ actualite, userId, onClose, onSaved, showToast }) {
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{actualite ? "Modifier l'actualité" : 'Nouvelle actualité'}</h2>

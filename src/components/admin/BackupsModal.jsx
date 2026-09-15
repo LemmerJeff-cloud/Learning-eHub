@@ -3,8 +3,10 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/AuthContext'
 import { restoreChapitreBackup } from '../../lib/backup'
 import ConfirmModal from './ConfirmModal'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 export default function BackupsModal({ chapitre, onClose, onRestored, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const { user } = useAuth()
   const [backups, setBackups]   = useState([])
   const [loading, setLoading]   = useState(true)
@@ -42,7 +44,7 @@ export default function BackupsModal({ chapitre, onClose, onRestored, showToast 
 
   return (
     <>
-      <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+      <div className="modal-overlay open" {...overlayClose}>
         <div className="modal">
           <button className="modal-close" onClick={onClose}>✕</button>
           <h2>Sauvegardes — {chapitre.titre_fr}</h2>

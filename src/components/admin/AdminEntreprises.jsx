@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import ConfirmModal from './ConfirmModal'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 export default function AdminEntreprises({ showToast }) {
   const [entreprises, setEntreprises] = useState([])
@@ -79,6 +80,7 @@ export default function AdminEntreprises({ showToast }) {
 }
 
 function EntrepriseModal({ entreprise, classes, onClose, onSaved, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const [nom, setNom]         = useState(entreprise?.nom || '')
   const [classeId, setClasseId] = useState(entreprise?.classe_id || '')
   const [loading, setLoading] = useState(false)
@@ -107,7 +109,7 @@ function EntrepriseModal({ entreprise, classes, onClose, onSaved, showToast }) {
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{entreprise ? "Modifier l'entreprise" : 'Nouvelle entreprise'}</h2>

@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/AuthContext'
 import ConfirmModal from './ConfirmModal'
 import ClasseDetail from './ClasseDetail'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 export default function AdminClasses({ showToast }) {
   const { isAdmin } = useAuth()
@@ -89,6 +90,7 @@ export default function AdminClasses({ showToast }) {
 }
 
 function ClasseModal({ classe, onClose, onSaved, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const [label, setLabel]     = useState(classe?.label || '')
   const [section, setSection] = useState(classe?.section || '')
   const [annee, setAnnee]     = useState(classe?.annee || '2025/2026')
@@ -131,7 +133,7 @@ function ClasseModal({ classe, onClose, onSaved, showToast }) {
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{classe ? 'Modifier la classe' : 'Nouvelle classe'}</h2>

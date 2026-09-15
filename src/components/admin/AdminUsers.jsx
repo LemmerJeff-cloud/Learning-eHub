@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { createUserAccount } from '../../lib/adminApi'
 import ConfirmModal from './ConfirmModal'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 const ROLES = [
   { value: 'eleve', label: 'Élève' },
@@ -201,6 +202,7 @@ export default function AdminUsers({ showToast }) {
 }
 
 function UserModal({ user, classes, entreprises, onClose, onSaved, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const [email, setEmail]         = useState('')
   const [password, setPassword]   = useState('')
   const [prenom, setPrenom]       = useState(user?.prenom || '')
@@ -324,7 +326,7 @@ function UserModal({ user, classes, entreprises, onClose, onSaved, showToast }) 
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{user ? 'Modifier le profil' : 'Nouvel utilisateur'}</h2>

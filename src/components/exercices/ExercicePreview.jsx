@@ -1,9 +1,11 @@
 import React from 'react'
 import ExerciceRunner from './ExerciceRunner'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 export default function ExercicePreview({ exercice, onClose }) {
+  const overlayClose = useOverlayClose(onClose)
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{exercice.titre}</h2>

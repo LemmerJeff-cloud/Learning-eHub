@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/AuthContext'
 import { backupChapitre } from '../../lib/backup'
 import FiliereCheckboxes from './FiliereCheckboxes'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 const TYPES = [
   { value: 'blocs',    label: 'Contenu (blocs)' },
@@ -11,6 +12,7 @@ const TYPES = [
 ]
 
 export default function SectionModal({ section, chapitreId, onClose, onSaved, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const { user, visibleFilieres } = useAuth()
   const [titre, setTitre]       = useState(section?.titre_fr || '')
   const [type, setType]         = useState(section?.type || 'blocs')
@@ -53,7 +55,7 @@ export default function SectionModal({ section, chapitreId, onClose, onSaved, sh
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{section ? 'Modifier la section' : 'Nouvelle section'}</h2>

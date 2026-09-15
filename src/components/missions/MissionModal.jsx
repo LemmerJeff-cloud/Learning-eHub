@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 const BUCKET = 'missions-fichiers'
 
 export default function MissionModal({ mission, matiereId, userId, onClose, onSaved, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const [titre, setTitre]             = useState(mission?.titre || '')
   const [description, setDescription] = useState(mission?.description || '')
   const [deadline, setDeadline]       = useState(mission?.deadline || '')
@@ -70,7 +72,7 @@ export default function MissionModal({ mission, matiereId, userId, onClose, onSa
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{mission ? 'Modifier la mission' : 'Nouvelle mission'}</h2>

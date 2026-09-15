@@ -4,6 +4,7 @@ import { useAuth } from '../../lib/AuthContext'
 import ConfirmModal from './ConfirmModal'
 import FiliereCheckboxes from './FiliereCheckboxes'
 import LyceeCheckboxes from './LyceeCheckboxes'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 const TAGS = [
   { value: 'event',    label: 'Événement' },
@@ -103,6 +104,7 @@ export default function AdminCalendrier({ showToast }) {
 }
 
 function CalendrierModal({ item, userId, onClose, onSaved, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const [jour, setJour]           = useState(item?.jour || 1)
   const [mois, setMois]           = useState(item?.mois || 'JAN')
   const [periode, setPeriode]     = useState(!!(item?.jour_fin || item?.mois_fin))
@@ -174,7 +176,7 @@ function CalendrierModal({ item, userId, onClose, onSaved, showToast }) {
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{item ? "Modifier l'événement" : 'Nouvel événement'}</h2>

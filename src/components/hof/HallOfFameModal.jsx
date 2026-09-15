@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { useOverlayClose } from '../../lib/useOverlayClose'
 
 const BUCKET = 'hall-of-fame'
 
 export default function HallOfFameModal({ entry, userId, onClose, onSaved, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const [titre, setTitre]             = useState(entry?.titre || '')
   const [description, setDescription] = useState(entry?.description || '')
   const [annee, setAnnee]             = useState(entry?.annee || '')
@@ -80,7 +82,7 @@ export default function HallOfFameModal({ entry, userId, onClose, onSaved, showT
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{entry ? "Modifier l'entrée" : 'Nouvelle entrée'}</h2>

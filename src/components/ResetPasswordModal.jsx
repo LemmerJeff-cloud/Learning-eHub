@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
 import { useAuth } from '../lib/AuthContext'
+import { useOverlayClose } from '../lib/useOverlayClose'
 
 export default function ResetPasswordModal({ onClose, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
   const { updatePassword } = useAuth()
   const [password, setPassword]   = useState('')
   const [confirm, setConfirm]     = useState('')
@@ -30,7 +32,7 @@ export default function ResetPasswordModal({ onClose, showToast }) {
   }
 
   return (
-    <div className="modal-overlay open" onClick={e => { if (onClose && e.target.classList.contains('modal-overlay')) onClose() }}>
+    <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         {onClose && <button className="modal-close" onClick={onClose}>✕</button>}
         <h2>Nouveau mot de passe</h2>
