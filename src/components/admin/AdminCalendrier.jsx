@@ -64,8 +64,13 @@ export default function AdminCalendrier({ showToast }) {
             <div style={{ flex: 1 }}>
               <div className="cal-title">{e.titre}</div>
               <div className="cal-sub">
-                {e.sous_titre}{e.fichiers?.length ? ` · 📎 ${e.fichiers.length}` : ''}
+                {e.sous_titre}
+                {e.jour_fin && e.mois_fin ? ` · 📅 ${e.jour} ${e.mois} – ${e.jour_fin} ${e.mois_fin}` : ''}
+                {e.lieu ? ` · 📍 ${e.lieu}` : ''}
+                {e.horaire_debut ? ` · 🕒 ${e.horaire_debut.slice(0, 5)}${e.horaire_fin ? `–${e.horaire_fin.slice(0, 5)}` : ''}` : ''}
+                {e.fichiers?.length ? ` · 📎 ${e.fichiers.length}` : ''}
                 {(e.filieres?.length < nFilieres || e.lycee_ids?.length < nLycees) ? ' · 🎯 ciblé' : ''}
+                {e.enseignants_only ? ' · 🔒 enseignants' : ''}
               </div>
               <span className={`cal-tag ${e.tag}`}>{TAGS.find(t => t.value === e.tag)?.label}</span>
             </div>
@@ -100,8 +105,15 @@ export default function AdminCalendrier({ showToast }) {
 function CalendrierModal({ item, userId, onClose, onSaved, showToast }) {
   const [jour, setJour]           = useState(item?.jour || 1)
   const [mois, setMois]           = useState(item?.mois || 'JAN')
+  const [periode, setPeriode]     = useState(!!(item?.jour_fin || item?.mois_fin))
+  const [jourFin, setJourFin]     = useState(item?.jour_fin || item?.jour || 1)
+  const [moisFin, setMoisFin]     = useState(item?.mois_fin || item?.mois || 'JAN')
   const [titre, setTitre]         = useState(item?.titre || '')
   const [sousTitre, setSousTitre] = useState(item?.sous_titre || '')
+  const [lieu, setLieu]           = useState(item?.lieu || '')
+  const [horaireDebut, setHoraireDebut] = useState(item?.horaire_debut?.slice(0, 5) || '')
+  const [horaireFin, setHoraireFin]     = useState(item?.horaire_fin?.slice(0, 5) || '')
+  const [enseignantsOnly, setEnseignantsOnly] = useState(item?.enseignants_only || false)
   const [tag, setTag]             = useState(item?.tag || 'event')
   const [fichiers, setFichiers]   = useState(item?.fichiers || [])
   const [filieres, setFilieres]   = useState(item?.filieres || null)
@@ -139,7 +151,11 @@ function CalendrierModal({ item, userId, onClose, onSaved, showToast }) {
     if (!titre.trim() || filieres === null) return
     setLoading(true)
     try {
-      const payload = { jour: Number(jour), mois, titre, sous_titre: sousTitre, tag, fichiers, filieres, lycee_ids: lyceeIds }
+      const payload = {
+        jour: Number(jour), mois, titre, sous_titre: sousTitre, tag, fichiers, filieres, lycee_ids: lyceeIds,
+        lieu, horaire_debut: horaireDebut || null, horaire_fin: horaireFin || null, enseignants_only: enseignantsOnly,
+        jour_fin: periode ? Number(jourFin) : null, mois_fin: periode ? moisFin : null,
+      }
       if (item) {
         const { error } = await supabase.from('calendrier').update(payload).eq('id', item.id)
         if (error) throw error
@@ -184,10 +200,48 @@ function CalendrierModal({ item, userId, onClose, onSaved, showToast }) {
             </div>
           </div>
           <div className="form-group">
+            <label>
+              <input type="checkbox" checked={periode} onChange={e => setPeriode(e.target.checked)} /> S'étend sur une période (plusieurs jours)
+            </label>
+          </div>
+          {periode && (
+            <div style={{ display: 'flex', gap: '0.6rem' }}>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label>Jour fin</label>
+                <input className="form-input" type="number" min="1" max="31" value={jourFin} onChange={e => setJourFin(e.target.value)} />
+              </div>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label>Mois fin</label>
+                <select className="form-select" value={moisFin} onChange={e => setMoisFin(e.target.value)}>
+                  {MOIS.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+            </div>
+          )}
+          <div className="form-group">
+            <label>Lieu</label>
+            <input className="form-input" value={lieu} onChange={e => setLieu(e.target.value)} />
+          </div>
+          <div style={{ display: 'flex', gap: '0.6rem' }}>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>Horaire début</label>
+              <input className="form-input" type="time" value={horaireDebut} onChange={e => setHoraireDebut(e.target.value)} />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>Horaire fin</label>
+              <input className="form-input" type="time" value={horaireFin} onChange={e => setHoraireFin(e.target.value)} />
+            </div>
+          </div>
+          <div className="form-group">
             <label>Type</label>
             <select className="form-select" value={tag} onChange={e => setTag(e.target.value)}>
               {TAGS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
+          </div>
+          <div className="form-group">
+            <label>
+              <input type="checkbox" checked={enseignantsOnly} onChange={e => setEnseignantsOnly(e.target.checked)} /> Réservé aux enseignants
+            </label>
           </div>
           <div className="form-group">
             <label>Visible pour les sections</label>

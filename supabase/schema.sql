@@ -1484,3 +1484,14 @@ create policy "exercices_authenticated_read" on exercices
 drop policy "exercice_blocks_read" on exercice_blocks;
 create policy "exercice_blocks_authenticated_read" on exercice_blocks
   for select using (is_active());
+
+-- ── CALENDRIER : LIEU, HORAIRES, RÉSERVATION ENSEIGNANTS (2026-09-15) ───────
+alter table calendrier add column if not exists lieu text not null default '';
+alter table calendrier add column if not exists horaire_debut time;
+alter table calendrier add column if not exists horaire_fin time;
+alter table calendrier add column if not exists enseignants_only boolean not null default false;
+
+-- jour_fin/mois_fin : null = événement d'un seul jour (comportement historique) ; renseignés
+-- ensemble = période s'étendant de (jour, mois) à (jour_fin, mois_fin).
+alter table calendrier add column if not exists jour_fin integer;
+alter table calendrier add column if not exists mois_fin text;

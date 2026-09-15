@@ -3,7 +3,7 @@ import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
 
 export default function PageAccueil({ setPage, showToast }) {
-  const { user, profile, isEleve, isProf, visibleFilieres, lyceeId } = useAuth()
+  const { user, profile, isEleve, isProf, isAdmin, visibleFilieres, lyceeId } = useAuth()
   const [actualites, setActualites] = useState([])
   const [calendrier, setCalendrier] = useState([])
   const [matieres, setMatieres]     = useState([])
@@ -25,6 +25,7 @@ export default function PageAccueil({ setPage, showToast }) {
   function visibleForProfile(item) {
     if (visibleFilieres && !item.filieres?.some(f => visibleFilieres.includes(f))) return false
     if (lyceeId && item.lycee_ids?.length > 0 && !item.lycee_ids.includes(lyceeId)) return false
+    if (item.enseignants_only && !isProf() && !isAdmin()) return false
     return true
   }
 
@@ -113,7 +114,12 @@ export default function PageAccueil({ setPage, showToast }) {
                 </div>
                 <div className="cal-body">
                   <div className="cal-title">{e.titre}</div>
-                  <div className="cal-sub">{e.sous_titre}</div>
+                  <div className="cal-sub">
+                    {e.sous_titre}
+                    {e.jour_fin && e.mois_fin ? ` · 📅 ${e.jour} ${e.mois} – ${e.jour_fin} ${e.mois_fin}` : ''}
+                    {e.lieu ? ` · 📍 ${e.lieu}` : ''}
+                    {e.horaire_debut ? ` · 🕒 ${e.horaire_debut.slice(0, 5)}${e.horaire_fin ? `–${e.horaire_fin.slice(0, 5)}` : ''}` : ''}
+                  </div>
                   <span className={`cal-tag ${e.tag}`}>{tagLabel(e.tag)}</span>
                   {e.fichiers?.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.3rem' }}>
