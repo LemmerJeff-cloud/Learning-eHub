@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import StringListEditor from './StringListEditor'
 import MiniRichEditor from './MiniRichEditor'
 import { toEmbedUrl } from './VideoEmbedExtension'
-import { uploadContentVideo } from '../../lib/upload'
+import { uploadContentImage, uploadContentVideo } from '../../lib/upload'
 
 const BLOCK_TYPES = [
   { value: 'texte',      label: 'Texte libre' },
@@ -10,13 +10,55 @@ const BLOCK_TYPES = [
   { value: 'exemple',    label: 'Exemple' },
   { value: 'formule',    label: 'Formule' },
   { value: 'liste',      label: 'Liste' },
+  { value: 'image',      label: 'Image' },
   { value: 'video',      label: 'Vidéo' },
 ]
 
 function defaultsForBlockType(type) {
   if (type === 'formule' || type === 'liste') return { items: [''] }
   if (type === 'video') return { src: '', provider: '' }
+  if (type === 'image') return { src: '', alt: '' }
   return { html: '' } // texte, definition, exemple
+}
+
+function ImageBlockEditor({ block, onChange, showToast }) {
+  const [uploading, setUploading] = useState(false)
+
+  async function handleFilePick(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploading(true)
+    try {
+      const src = await uploadContentImage(file)
+      onChange({ src })
+    } catch (err) {
+      showToast?.(err.message || "Échec de l'upload de l'image", 'error')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  if (block.src) {
+    return (
+      <div>
+        <img src={block.src} alt={block.alt || ''} style={{ width: '100%', borderRadius: 'var(--radius)' }} />
+        <input
+          className="form-input" style={{ marginTop: '0.5rem' }}
+          placeholder="Texte alternatif (optionnel)"
+          value={block.alt || ''} onChange={e => onChange({ alt: e.target.value })}
+        />
+        <button type="button" className="icon-btn danger" style={{ marginTop: '0.5rem' }} onClick={() => onChange({ src: '', alt: '' })}>🗑️ Retirer l'image</button>
+      </div>
+    )
+  }
+
+  return (
+    <label className="tiptap-upload-btn">
+      {uploading ? 'Téléversement…' : '📤 Téléverser une image'}
+      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFilePick} disabled={uploading} />
+    </label>
+  )
 }
 
 function VideoBlockEditor({ block, onChange, showToast }) {
@@ -131,6 +173,9 @@ export default function SectionBlocksEditor({ draft, onChange, showToast }) {
           )}
           {block.type === 'video' && (
             <VideoBlockEditor block={block} onChange={patch => updateBlock(i, patch)} showToast={showToast} />
+          )}
+          {block.type === 'image' && (
+            <ImageBlockEditor block={block} onChange={patch => updateBlock(i, patch)} showToast={showToast} />
           )}
         </div>
       ))}

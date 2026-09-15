@@ -44,8 +44,7 @@ function runsFromInline(node, marks = {}) {
   return runs
 }
 
-async function imageParagraphFromEl(imgEl) {
-  const src = imgEl.getAttribute('src')
+async function imageParagraphFromSrc(src) {
   try {
     const res = await fetch(src)
     if (!res.ok) throw new Error('fetch failed')
@@ -132,7 +131,7 @@ async function blocksFromHtml(html) {
     } else if (tag === 'table') {
       blocks.push(buildTable(node))
     } else if (tag === 'img') {
-      blocks.push(await imageParagraphFromEl(node))
+      blocks.push(await imageParagraphFromSrc(node.getAttribute('src')))
     } else if (tag === 'div' && node.hasAttribute('data-video-embed')) {
       const src = node.querySelector('iframe, video')?.getAttribute('src')
       blocks.push(src
@@ -166,6 +165,9 @@ async function blockToDocxParagraphs(block) {
   }
   if (block.type === 'video') {
     return block.src ? [videoParagraph(block.src)] : []
+  }
+  if (block.type === 'image') {
+    return block.src ? [await imageParagraphFromSrc(block.src)] : []
   }
   return []
 }

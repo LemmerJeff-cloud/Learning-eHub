@@ -731,6 +731,9 @@ body {
 .tiptap-editor.mini { min-height: 70px; padding: 0.7rem 0.9rem; }
 .mini-rich-editor { margin-bottom: 0; }
 
+.block-image { margin: 0.75rem 0; }
+.block-image img { width: 100%; border-radius: var(--radius); display: block; }
+
 .video-embed { margin: 0.75rem 0; }
 .video-embed iframe, .tiptap-editor iframe[data-video-embed] { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--radius); }
 .video-embed video, .tiptap-editor video { width: 100%; border-radius: var(--radius); }

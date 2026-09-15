@@ -26,6 +26,11 @@ export default function BlockBody({ block }) {
       </ul>
     </div>
   )
+  if (block.type === 'image') return !block.src ? null : (
+    <div className="block-image">
+      <img src={block.src} alt={block.alt || ''} />
+    </div>
+  )
   if (block.type === 'video') return !block.src ? null : (
     <div className="video-embed">
       {block.provider === 'file'
