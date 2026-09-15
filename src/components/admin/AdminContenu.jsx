@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/AuthContext'
 import { downloadChapitreWord } from '../../lib/exportWord'
+import { downloadAllCoursesBackup } from '../../lib/exportAllCourses'
 import BackupsModal from './BackupsModal'
 
 export default function AdminContenu({ showToast }) {
@@ -11,6 +12,7 @@ export default function AdminContenu({ showToast }) {
   const [loading, setLoading]     = useState(true)
   const [exportingId, setExportingId] = useState(null)
   const [backupsModal, setBackupsModal] = useState(null)
+  const [backingUp, setBackingUp] = useState(false)
 
   useEffect(() => { load() }, [])
 
@@ -42,6 +44,17 @@ export default function AdminContenu({ showToast }) {
     }
   }
 
+  async function handleBackupAll() {
+    setBackingUp(true)
+    try {
+      await downloadAllCoursesBackup()
+    } catch (err) {
+      showToast(err.message || 'Échec de la sauvegarde', 'error')
+    } finally {
+      setBackingUp(false)
+    }
+  }
+
   if (loading) return <p style={{ color: 'var(--text-3)' }}>Chargement…</p>
 
   return (
@@ -49,6 +62,11 @@ export default function AdminContenu({ showToast }) {
       <p className="page-sub" style={{ marginBottom: '1rem' }}>
         Export Word pour distribuer un chapitre{isAdmin() ? ', sauvegardes et restauration du contenu.' : '.'}
       </p>
+      {isAdmin() && (
+        <button className="fic-btn" style={{ marginBottom: '1rem' }} disabled={backingUp} onClick={handleBackupAll}>
+          {backingUp ? '⏳ Génération…' : '🗄️ Backup de tous les cours (.zip)'}
+        </button>
+      )}
       <div className="table-wrap">
         <table className="user-table">
           <thead><tr><th>Chapitre</th><th>Matière</th><th></th></tr></thead>

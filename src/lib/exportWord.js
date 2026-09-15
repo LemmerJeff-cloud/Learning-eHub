@@ -223,16 +223,20 @@ export async function buildChapitreDocx(chapitre, sections) {
 
 const DIACRITICS_RE = new RegExp('[̀-ͯ]', 'g')
 
-function slugify(str) {
+export function slugify(str) {
   return (str || '')
     .normalize('NFD').replace(DIACRITICS_RE, '')
     .replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '')
     || 'chapitre'
 }
 
-export async function downloadChapitreWord(chapitre, sections) {
+export async function buildChapitreDocxBlob(chapitre, sections) {
   const doc = await buildChapitreDocx(chapitre, sections)
-  const blob = await Packer.toBlob(doc)
+  return Packer.toBlob(doc)
+}
+
+export async function downloadChapitreWord(chapitre, sections) {
+  const blob = await buildChapitreDocxBlob(chapitre, sections)
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
