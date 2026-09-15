@@ -411,16 +411,10 @@ export default function PageCours({ matiereId, showToast }) {
 
         <div className="cours-nav">
           {prev && (
-            <button className="btn-nav" onClick={() => {
-              setCurrentSec(prev)
-              window.dispatchEvent(new CustomEvent('cours:section', { detail: { chId: currentCh.id, secId: prev.id } }))
-            }}>← {prev.titre_fr}</button>
+            <button className="btn-nav" onClick={() => openSection(currentCh.id, prev.id)}>← {prev.titre_fr}</button>
           )}
           {next && (
-            <button className="btn-nav next" onClick={() => {
-              setCurrentSec(next)
-              window.dispatchEvent(new CustomEvent('cours:section', { detail: { chId: currentCh.id, secId: next.id } }))
-            }}>{next.titre_fr} →</button>
+            <button className="btn-nav next" onClick={() => openSection(currentCh.id, next.id)}>{next.titre_fr} →</button>
           )}
         </div>
 
