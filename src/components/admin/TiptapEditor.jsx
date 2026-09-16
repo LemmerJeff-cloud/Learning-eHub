@@ -5,11 +5,12 @@ import Underline from '@tiptap/extension-underline'
 import TextStyle from '@tiptap/extension-text-style'
 import Color from '@tiptap/extension-color'
 import Image from '@tiptap/extension-image'
+import Link from '@tiptap/extension-link'
 import Table from '@tiptap/extension-table'
 import TableRow from '@tiptap/extension-table-row'
 import TableHeader from '@tiptap/extension-table-header'
 import TableCell from '@tiptap/extension-table-cell'
-import { uploadContentImage, uploadContentVideo } from '../../lib/upload'
+import { uploadContentImage, uploadContentVideo, uploadContentFile } from '../../lib/upload'
 import { VideoEmbed, toEmbedUrl } from './VideoEmbedExtension'
 
 export default function TiptapEditor({ content, onChange, showToast }) {
@@ -20,6 +21,7 @@ export default function TiptapEditor({ content, onChange, showToast }) {
       TextStyle,
       Color,
       Image,
+      Link.configure({ openOnClick: false, HTMLAttributes: { target: '_blank', rel: 'noreferrer' } }),
       Table.configure({ resizable: true }),
       TableRow,
       TableHeader,
@@ -79,6 +81,21 @@ export default function TiptapEditor({ content, onChange, showToast }) {
     }
   }
 
+  async function handleFilePick(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !editor) return
+    try {
+      const url = await uploadContentFile(file)
+      editor.chain().focus().insertContent([
+        { type: 'text', text: `📎 ${file.name}`, marks: [{ type: 'link', attrs: { href: url } }] },
+        { type: 'text', text: ' ' },
+      ]).run()
+    } catch (err) {
+      showToast?.(err.message || "Échec de l'upload du fichier", 'error')
+    }
+  }
+
   if (!editor) return null
 
   return (
@@ -125,6 +142,10 @@ export default function TiptapEditor({ content, onChange, showToast }) {
             </div>
           )}
         </div>
+        <label className="tiptap-upload-btn">
+          📎 Fichier
+          <input type="file" style={{ display: 'none' }} onChange={handleFilePick} />
+        </label>
       </div>
       <EditorContent editor={editor} className="tiptap-editor" />
     </div>

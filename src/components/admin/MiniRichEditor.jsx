@@ -10,7 +10,7 @@ import Table from '@tiptap/extension-table'
 import TableRow from '@tiptap/extension-table-row'
 import TableHeader from '@tiptap/extension-table-header'
 import TableCell from '@tiptap/extension-table-cell'
-import { uploadContentImage } from '../../lib/upload'
+import { uploadContentImage, uploadContentFile } from '../../lib/upload'
 
 export default function MiniRichEditor({ content, onChange, showToast }) {
   const [showLinkInput, setShowLinkInput] = useState(false)
@@ -56,6 +56,21 @@ export default function MiniRichEditor({ content, onChange, showToast }) {
     }
   }
 
+  async function handleFilePick(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !editor) return
+    try {
+      const url = await uploadContentFile(file)
+      editor.chain().focus().insertContent([
+        { type: 'text', text: `📎 ${file.name}`, marks: [{ type: 'link', attrs: { href: url } }] },
+        { type: 'text', text: ' ' },
+      ]).run()
+    } catch (err) {
+      showToast?.(err.message || "Échec de l'upload du fichier", 'error')
+    }
+  }
+
   if (!editor) return null
 
   return (
@@ -76,6 +91,10 @@ export default function MiniRichEditor({ content, onChange, showToast }) {
         <label className="tiptap-upload-btn">
           🖼️
           <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImagePick} />
+        </label>
+        <label className="tiptap-upload-btn">
+          📎
+          <input type="file" style={{ display: 'none' }} onChange={handleFilePick} />
         </label>
       </div>
       {showLinkInput && (
