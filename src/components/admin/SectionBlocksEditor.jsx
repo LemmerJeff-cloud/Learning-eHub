@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import StringListEditor from './StringListEditor'
 import MiniRichEditor from './MiniRichEditor'
 import { toEmbedUrl } from './VideoEmbedExtension'
-import { uploadContentImage, uploadContentVideo } from '../../lib/upload'
+import { uploadContentImage, uploadContentVideo, uploadContentFile } from '../../lib/upload'
 
 const BLOCK_TYPES = [
   { value: 'texte',      label: 'Texte libre' },
@@ -12,12 +12,14 @@ const BLOCK_TYPES = [
   { value: 'liste',      label: 'Liste' },
   { value: 'image',      label: 'Image' },
   { value: 'video',      label: 'Vidéo' },
+  { value: 'fichier',    label: 'Fichier à télécharger' },
 ]
 
 function defaultsForBlockType(type) {
   if (type === 'formule' || type === 'liste') return { items: [''] }
   if (type === 'video') return { src: '', provider: '' }
   if (type === 'image') return { src: '', alt: '' }
+  if (type === 'fichier') return { url: '', nom: '' }
   return { html: '' } // texte, definition, exemple
 }
 
@@ -121,6 +123,43 @@ function VideoBlockEditor({ block, onChange, showToast }) {
   )
 }
 
+function FileBlockEditor({ block, onChange, showToast }) {
+  const [uploading, setUploading] = useState(false)
+
+  async function handleFilePick(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploading(true)
+    try {
+      const url = await uploadContentFile(file)
+      onChange({ url, nom: file.name })
+    } catch (err) {
+      showToast?.(err.message || "Échec de l'upload du fichier", 'error')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  if (block.url) {
+    return (
+      <div>
+        <a href={block.url} target="_blank" rel="noreferrer">⬇️ {block.nom || block.url}</a>
+        <div>
+          <button type="button" className="icon-btn danger" style={{ marginTop: '0.5rem' }} onClick={() => onChange({ url: '', nom: '' })}>🗑️ Retirer le fichier</button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <label className="tiptap-upload-btn">
+      {uploading ? 'Téléversement…' : '📤 Téléverser un fichier'}
+      <input type="file" style={{ display: 'none' }} onChange={handleFilePick} disabled={uploading} />
+    </label>
+  )
+}
+
 export default function SectionBlocksEditor({ draft, onChange, showToast }) {
   const blocks = draft.blocks || []
 
@@ -176,6 +215,9 @@ export default function SectionBlocksEditor({ draft, onChange, showToast }) {
           )}
           {block.type === 'image' && (
             <ImageBlockEditor block={block} onChange={patch => updateBlock(i, patch)} showToast={showToast} />
+          )}
+          {block.type === 'fichier' && (
+            <FileBlockEditor block={block} onChange={patch => updateBlock(i, patch)} showToast={showToast} />
           )}
         </div>
       ))}

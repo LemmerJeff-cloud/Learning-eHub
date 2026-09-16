@@ -38,5 +38,10 @@ export default function BlockBody({ block }) {
         : <iframe src={block.src} frameBorder="0" allowFullScreen title="Vidéo" style={{ width: '100%', aspectRatio: '16/9', border: 0, borderRadius: 'var(--radius)' }} />}
     </div>
   )
+  if (block.type === 'fichier') return !block.url ? null : (
+    <div className="block-fichier" style={{ marginBottom: '1rem' }}>
+      <a href={block.url} target="_blank" rel="noreferrer">⬇️ {block.nom || 'Télécharger le fichier'}</a>
+    </div>
+  )
   return null
 }

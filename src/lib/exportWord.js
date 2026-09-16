@@ -87,6 +87,20 @@ function videoParagraph(src) {
   })
 }
 
+// Fichier téléchargeable : lien cliquable vers le fichier téléversé.
+function fichierParagraph(url, nom) {
+  return new Paragraph({
+    children: [
+      new TextRun({ text: '📎 Fichier : ', bold: true }),
+      new ExternalHyperlink({
+        link: url,
+        children: [new TextRun({ text: nom || url, color: '2563EB', underline: {} })],
+      }),
+    ],
+    spacing: { after: 120 },
+  })
+}
+
 function buildTable(tableEl) {
   const rows = [...tableEl.querySelectorAll('tr')].map(tr => {
     const cells = [...tr.children].map(cellEl => {
@@ -168,6 +182,9 @@ async function blockToDocxParagraphs(block) {
   }
   if (block.type === 'image') {
     return block.src ? [await imageParagraphFromSrc(block.src)] : []
+  }
+  if (block.type === 'fichier') {
+    return block.url ? [fichierParagraph(block.url, block.nom)] : []
   }
   return []
 }

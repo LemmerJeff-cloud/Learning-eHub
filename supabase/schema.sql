@@ -1531,3 +1531,23 @@ insert into calendrier (jour, mois, titre, sous_titre, tag, filieres, lieu, hora
 insert into calendrier (jour, mois, titre, sous_titre, tag, filieres, lieu, horaire_debut, horaire_fin, enseignants_only, jour_fin, mois_fin) values (17, 'MAI', 'Finale nationale des EE', 'Présentations finales des finalistes et remise des prix (Meilleure Présentation, Concours MGQ, Meilleure EE de l''année)', 'event', array['2TPCM','BTS'], '', null, null, false, 21, 'MAI');
 insert into calendrier (jour, mois, titre, sous_titre, tag, filieres, lieu, horaire_debut, horaire_fin, enseignants_only, jour_fin, mois_fin) values (24, 'MAI', 'Stage d''apprentissage — 2TPCM', '', 'event', array['2TPCM'], '', null, null, false, 2, 'JUIL');
 insert into calendrier (jour, mois, titre, sous_titre, tag, filieres, lieu, horaire_debut, horaire_fin, enseignants_only, jour_fin, mois_fin) values (8, 'FÉV', 'Stage — BTS B1DiCo (1ère année)', '', 'event', array['BTS'], '', null, null, false, 5, 'MAR');
+
+-- ── STORAGE : FICHIERS DE CONTENU (bloc "fichier" de l'éditeur de section) (2026-09-16) ──
+-- Même modèle que "content-images"/"content-videos" : bucket public, écriture réservée
+-- au staff. Pas de restriction de type MIME (PDF, Word, Excel, zip, etc. doivent tous
+-- pouvoir être déposés) ; limite de taille alignée sur "content-videos".
+insert into storage.buckets (id, name, public, file_size_limit)
+  values ('content-files', 'content-files', true, 209715200)
+  on conflict (id) do nothing;
+
+create policy "content_files_read" on storage.objects
+  for select using (bucket_id = 'content-files');
+
+create policy "content_files_write" on storage.objects
+  for insert with check (bucket_id = 'content-files' and my_role() in ('enseignant','admin'));
+
+create policy "content_files_update" on storage.objects
+  for update using (bucket_id = 'content-files' and my_role() in ('enseignant','admin'));
+
+create policy "content_files_delete" on storage.objects
+  for delete using (bucket_id = 'content-files' and my_role() in ('enseignant','admin'));

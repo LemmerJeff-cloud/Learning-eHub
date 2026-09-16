@@ -734,6 +734,15 @@ body {
 .block-image { margin: 0.75rem 0; }
 .block-image img { width: 100%; border-radius: var(--radius); display: block; }
 
+.block-fichier a {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.42rem 0.9rem; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-2); font-size: 0.82rem; text-decoration: none;
+  transition: all 0.12s;
+}
+.block-fichier a:hover { color: var(--navy); border-color: var(--navy); }
+
 .video-embed { margin: 0.75rem 0; }
 .video-embed iframe, .tiptap-editor iframe[data-video-embed] { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--radius); }
 .video-embed video, .tiptap-editor video { width: 100%; border-radius: var(--radius); }
