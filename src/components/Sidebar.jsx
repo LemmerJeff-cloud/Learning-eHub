@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 export default function Sidebar({ page, matiereId }) {
   const { profile, canEdit, isProf, isAdmin, visibleFilieres } = useAuth()
   const [chapitres, setChapitres] = useState([])
+  const [chapitresLoading, setChapitresLoading] = useState(true)
   const [openChap, setOpenChap]   = useState(null)
   const [activeSec, setActiveSec] = useState(null)
   const [activeSub, setActiveSub] = useState(null)
@@ -18,7 +19,7 @@ export default function Sidebar({ page, matiereId }) {
   useEffect(() => { setMobileOpen(false) }, [page])
 
   useEffect(() => {
-  if (page === 'cours' && matiereId) loadChapitres()
+  if (page === 'cours' && matiereId) { setChapitresLoading(true); loadChapitres() }
   }, [page, matiereId])
 
   async function loadChapitres() {
@@ -27,7 +28,7 @@ export default function Sidebar({ page, matiereId }) {
       .select('id, titre_fr, emoji, filieres, ordre, sections_cours(id, titre_fr, type, filieres, ordre)')
       .contains('matiere_ids', [matiereId])
       .order('ordre')
-    if (!data) return
+    if (!data) { setChapitresLoading(false); return }
     const filtered = data
     filtered.forEach(ch => {
       if (ch.sections_cours) {
@@ -36,6 +37,7 @@ export default function Sidebar({ page, matiereId }) {
       }
     })
     setChapitres(filtered)
+    setChapitresLoading(false)
   }
 
   // Sync with PageCours navigation
@@ -99,7 +101,7 @@ export default function Sidebar({ page, matiereId }) {
             <div className="sidebar-section-label">Chapitres</div>
             {chapitres.length === 0 && (
               <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', padding: '0.5rem 1.25rem' }}>
-                Chargement…
+                {chapitresLoading ? 'Chargement…' : 'Aucun chapitre pour l’instant.'}
               </p>
             )}
             {chapitres.map(ch => (
