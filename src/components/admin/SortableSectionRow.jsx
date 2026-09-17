@@ -12,16 +12,18 @@ export default function SortableSectionRow({ section, index, editMode, onOpen, o
   }
 
   return (
-    <div ref={setNodeRef} style={style} className="section-row">
+    <div ref={setNodeRef} style={style} className="section-row" onClick={() => onOpen()}>
       {editMode && (
-        <span className="drag-handle" {...attributes} {...listeners} title="Glisser pour réordonner">⠿</span>
+        <span
+          className="drag-handle"
+          {...attributes}
+          {...listeners}
+          onClick={e => e.stopPropagation()}
+          title="Glisser pour réordonner"
+        >⠿</span>
       )}
       <span className="section-row-num">{String(index + 1).padStart(2, '0')}</span>
-      <span
-        className="section-row-title"
-        onClick={() => onOpen()}
-        style={{ cursor: 'pointer' }}
-      >
+      <span className="section-row-title">
         {section.titre_fr}
       </span>
       {section.type === 'activite' && <span className="section-row-tag">✏️ Activité</span>}
