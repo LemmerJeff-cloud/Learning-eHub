@@ -124,6 +124,20 @@ export default function PageCours({ matiereId, showToast }) {
     setSections(visibleFilieres ? data.filter(s => s.filieres.some(f => visibleFilieres.includes(f))) : data)
   }
 
+  // Les blocs importés avant la fonctionnalité de masquage n'ont pas de champ `id` propre
+  // (juste {"type": "texte", "html": "..."}) : on en génère un et on le persiste dès
+  // l'ouverture, sinon "réveler" un tel bloc écrirait bloc_id: null dans revele_etat.
+  async function ensureBlockIds(sec) {
+    const blocks = sec.contenu?.blocks
+    if (sec.type !== 'blocs' || !Array.isArray(blocks) || blocks.every(b => b.id)) return sec
+    const contenu = { ...sec.contenu, blocks: blocks.map(b => ({ ...b, id: b.id || crypto.randomUUID() })) }
+    if (canEdit()) {
+      const { error } = await supabase.from('sections_cours').update({ contenu }).eq('id', sec.id)
+      if (error) showToast(error.message, 'error')
+    }
+    return { ...sec, contenu }
+  }
+
   async function openSection(chId, secId) {
     if (!currentCh || currentCh.id !== chId) {
       const ch = chapitres.find(c => c.id === chId)
@@ -131,7 +145,7 @@ export default function PageCours({ matiereId, showToast }) {
     }
     const { data, error } = await supabase.from('sections_cours').select('*').eq('id', secId).single()
     if (error) { showToast(error.message, 'error'); return }
-    setCurrentSec(data)
+    setCurrentSec(await ensureBlockIds(data))
     setView('section')
     window.dispatchEvent(new CustomEvent('cours:section', { detail: { chId, secId } }))
   }
@@ -490,7 +504,7 @@ export default function PageCours({ matiereId, showToast }) {
               refreshSidebar()
               const { data, error } = await supabase.from('sections_cours').select('*').eq('id', currentSec.id).single()
               if (error) { showToast(error.message, 'error'); return }
-              setCurrentSec(data)
+              setCurrentSec(await ensureBlockIds(data))
             }}
             showToast={showToast}
           />
