@@ -160,8 +160,9 @@ function FileBlockEditor({ block, onChange, showToast }) {
   )
 }
 
-export default function SectionBlocksEditor({ draft, onChange, showToast }) {
+export default function SectionBlocksEditor({ draft, onChange, showToast, revealProps }) {
   const blocks = draft.blocks || []
+  const { activeClasseId, myClasses, revealedBlocIds, onChangeActiveClasse, onToggleReveal } = revealProps || {}
 
   function updateBlock(i, patch) {
     const next = [...blocks]
@@ -187,9 +188,19 @@ export default function SectionBlocksEditor({ draft, onChange, showToast }) {
 
   return (
     <div>
-      {blocks.map((block, i) => (
+      {myClasses?.length > 0 && (
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-2)', marginBottom: '1rem' }}>
+          Classe active (pour révéler/masquer ci-dessous)
+          <select className="form-select" value={activeClasseId} onChange={e => onChangeActiveClasse?.(e.target.value)} style={{ maxWidth: '160px' }}>
+            {myClasses.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+          </select>
+        </label>
+      )}
+      {blocks.map((block, i) => {
+        const isRevealed = !!revealedBlocIds?.has(block.id)
+        return (
         <div key={block.id} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1rem', marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.7rem', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.7rem', gap: '0.6rem', flexWrap: 'wrap' }}>
             <select className="form-select" value={block.type} onChange={e => changeType(i, e.target.value)} style={{ maxWidth: '200px' }}>
               {BLOCK_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
@@ -197,6 +208,15 @@ export default function SectionBlocksEditor({ draft, onChange, showToast }) {
               <input type="checkbox" checked={!!block.masquable} onChange={e => updateBlock(i, { masquable: e.target.checked })} />
               🔒 Masquable
             </label>
+            {block.masquable && activeClasseId && (
+              <button
+                type="button"
+                className="fic-btn"
+                onClick={() => onToggleReveal?.(block.id, isRevealed)}
+              >
+                {isRevealed ? '🔓 Révélé pour cette classe — cliquer pour re-masquer' : '🔒 Masqué pour cette classe — cliquer pour révéler'}
+              </button>
+            )}
             <div>
               <button type="button" className="icon-btn" onClick={() => moveBlock(i, -1)} disabled={i === 0} title="Monter">↑</button>
               <button type="button" className="icon-btn" onClick={() => moveBlock(i, 1)} disabled={i === blocks.length - 1} title="Descendre">↓</button>
@@ -224,7 +244,8 @@ export default function SectionBlocksEditor({ draft, onChange, showToast }) {
             <FileBlockEditor block={block} onChange={patch => updateBlock(i, patch)} showToast={showToast} />
           )}
         </div>
-      ))}
+        )
+      })}
       <button type="button" className="fic-btn" onClick={addBlock}>➕ Ajouter un bloc</button>
     </div>
   )

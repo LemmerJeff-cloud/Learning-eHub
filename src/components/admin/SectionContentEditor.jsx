@@ -3,9 +3,9 @@ import StringListEditor from './StringListEditor'
 import MiniRichEditor from './MiniRichEditor'
 import SectionBlocksEditor from './SectionBlocksEditor'
 
-export default function SectionContentEditor({ type, draft, onChange, showToast }) {
+export default function SectionContentEditor({ type, draft, onChange, showToast, revealProps }) {
   if (type === 'blocs') {
-    return <SectionBlocksEditor draft={draft} onChange={onChange} showToast={showToast} />
+    return <SectionBlocksEditor draft={draft} onChange={onChange} showToast={showToast} revealProps={revealProps} />
   }
 
   if (type === 'definition' || type === 'exemple') {

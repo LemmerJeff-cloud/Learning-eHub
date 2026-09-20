@@ -440,7 +440,17 @@ export default function PageCours({ matiereId, showToast }) {
           ) : canEdit() && editMode ? (
             contentLoadedFor === `${currentSec.id}:${currentSec.type}` ? (
               <div>
-                <SectionContentEditor type={currentSec.type} draft={contentDraft} onChange={setContentDraft} showToast={showToast} />
+                <SectionContentEditor
+                  type={currentSec.type}
+                  draft={contentDraft}
+                  onChange={setContentDraft}
+                  showToast={showToast}
+                  revealProps={{
+                    activeClasseId, myClasses, revealedBlocIds,
+                    onChangeActiveClasse: setActiveClasseId,
+                    onToggleReveal: toggleReveal,
+                  }}
+                />
                 <button className="btn-primary" style={{ width: 'auto', marginTop: '0.9rem', padding: '0.6rem 1.4rem' }}
                   onClick={handleSaveContent} disabled={savingSection}>
                   {savingSection ? 'Enregistrement…' : '💾 Enregistrer'}
