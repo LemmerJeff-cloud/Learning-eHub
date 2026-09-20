@@ -12,6 +12,8 @@ import ExercicesList from '../components/exercices/ExercicesList'
 import BlockBody from '../components/BlockBody'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
+import { fetchMyClasses } from '../lib/progression'
+import { fetchRevealedBlocIds, revealBloc, hideBloc } from '../lib/reveal'
 
 export default function PageCours({ matiereId, showToast }) {
   const { user, profile, canEditMatiere, visibleFilieres } = useAuth()
@@ -22,6 +24,10 @@ export default function PageCours({ matiereId, showToast }) {
   const [currentSec, setCurrentSec] = useState(null)
   const [sections, setSections]     = useState([])
   const [loading, setLoading]       = useState(false)
+
+  const [myClasses, setMyClasses]         = useState([])
+  const [activeClasseId, setActiveClasseId] = useState('')
+  const [revealedBlocIds, setRevealedBlocIds] = useState(new Set())
 
   const [editMode, setEditMode]         = useState(false)
   const [chapitreModal, setChapitreModal] = useState(null) // null | 'new' | chapitre
@@ -36,6 +42,38 @@ export default function PageCours({ matiereId, showToast }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   useEffect(() => { if (matiereId) loadChapitres() }, [visibleFilieres, profile, matiereId])
+
+  useEffect(() => {
+    if (!profile || !canEdit()) return
+    fetchMyClasses(profile.role, user.id)
+      .then(cls => { setMyClasses(cls); if (cls.length > 0) setActiveClasseId(prev => prev || cls[0].id) })
+      .catch(err => showToast(err.message || 'Erreur', 'error'))
+  }, [profile])
+
+  const classeIdActive = canEdit() ? activeClasseId : profile?.classe_id
+
+  useEffect(() => {
+    if (view !== 'section' || !currentSec) { setRevealedBlocIds(new Set()); return }
+    if (!classeIdActive) { setRevealedBlocIds(new Set()); return }
+    fetchRevealedBlocIds(currentSec.id, classeIdActive)
+      .then(setRevealedBlocIds)
+      .catch(err => showToast(err.message || 'Erreur', 'error'))
+  }, [currentSec, view, classeIdActive])
+
+  async function toggleReveal(blocId, isRevealed) {
+    if (!classeIdActive) return
+    try {
+      if (isRevealed) {
+        await hideBloc(blocId, classeIdActive)
+        setRevealedBlocIds(prev => { const next = new Set(prev); next.delete(blocId); return next })
+      } else {
+        await revealBloc(currentSec.id, blocId, classeIdActive, user.id)
+        setRevealedBlocIds(prev => new Set(prev).add(blocId))
+      }
+    } catch (err) {
+      showToast(err.message || 'Erreur', 'error')
+    }
+  }
 
   useEffect(() => {
     if (!currentSec) return
@@ -294,7 +332,12 @@ export default function PageCours({ matiereId, showToast }) {
             <p>{currentCh?.description_fr}</p>
           </div>
         </div>
-        {canEdit() && <EditorModeToggle editMode={editMode} setEditMode={setEditMode} />}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {canEdit() && myClasses.length > 0 && (
+            <ClasseActiveSelector classes={myClasses} value={activeClasseId} onChange={setActiveClasseId} />
+          )}
+          {canEdit() && <EditorModeToggle editMode={editMode} setEditMode={setEditMode} />}
+        </div>
       </div>
 
       {editMode && (
@@ -362,7 +405,12 @@ export default function PageCours({ matiereId, showToast }) {
             <span className="bc-sep">›</span>
             <span>{currentSec.titre_fr}</span>
           </div>
-          {canEdit() && <EditorModeToggle editMode={editMode} setEditMode={setEditMode} />}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {canEdit() && myClasses.length > 0 && (
+              <ClasseActiveSelector classes={myClasses} value={activeClasseId} onChange={setActiveClasseId} />
+            )}
+            {canEdit() && <EditorModeToggle editMode={editMode} setEditMode={setEditMode} />}
+          </div>
         </div>
 
         {canEdit() && editMode && (
@@ -403,7 +451,12 @@ export default function PageCours({ matiereId, showToast }) {
               <p style={{ color: 'var(--text-3)' }}>Chargement…</p>
             )
           ) : (
-            <SectionBody sec={currentSec} />
+            <SectionBody
+              sec={currentSec}
+              canEdit={canEdit()}
+              revealedBlocIds={revealedBlocIds}
+              onToggleReveal={toggleReveal}
+            />
           )}
         </div>
 
@@ -439,6 +492,17 @@ export default function PageCours({ matiereId, showToast }) {
   return null
 }
 
+function ClasseActiveSelector({ classes, value, onChange }) {
+  return (
+    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-2)' }}>
+      Classe active
+      <select className="form-select" value={value} onChange={e => onChange(e.target.value)} style={{ maxWidth: '160px' }}>
+        {classes.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+      </select>
+    </label>
+  )
+}
+
 function EditorModeToggle({ editMode, setEditMode }) {
   return (
     <label style={{
@@ -470,13 +534,35 @@ function PreviewPane({ sec }) {
   )
 }
 
-function SectionBody({ sec }) {
+function SectionBody({ sec, canEdit = false, revealedBlocIds, onToggleReveal }) {
   const { type, contenu } = sec
   const c = contenu || {}
 
   if (type === 'blocs') return (
     <div>
-      {(c.blocks || []).map(block => <BlockBody key={block.id} block={block} />)}
+      {(c.blocks || []).map(block => {
+        if (!block.masquable) return <BlockBody key={block.id} block={block} />
+        const isRevealed = !revealedBlocIds || revealedBlocIds.has(block.id)
+        if (canEdit) return (
+          <div key={block.id} style={{ position: 'relative', border: '1px dashed var(--border)', borderRadius: 'var(--radius)', padding: '0.75rem', marginBottom: '1rem' }}>
+            <button
+              type="button"
+              className="fic-btn"
+              style={{ marginBottom: '0.6rem' }}
+              onClick={() => onToggleReveal?.(block.id, isRevealed)}
+            >
+              {isRevealed ? '🔓 Révélé — cliquer pour re-masquer' : '🔒 Masqué — cliquer pour révéler'}
+            </button>
+            <BlockBody block={block} />
+          </div>
+        )
+        if (!isRevealed) return (
+          <div key={block.id} className="box box-definition" style={{ fontStyle: 'italic', color: 'var(--text-2)' }}>
+            🔍 Contenu à découvrir. Faites vos recherches (internet, IA) sur le sujet — votre enseignant révélera le contenu officiel après correction collective.
+          </div>
+        )
+        return <BlockBody key={block.id} block={block} />
+      })}
     </div>
   )
 

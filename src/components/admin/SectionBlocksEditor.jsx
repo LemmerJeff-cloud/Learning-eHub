@@ -193,6 +193,10 @@ export default function SectionBlocksEditor({ draft, onChange, showToast }) {
             <select className="form-select" value={block.type} onChange={e => changeType(i, e.target.value)} style={{ maxWidth: '200px' }}>
               {BLOCK_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-2)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              <input type="checkbox" checked={!!block.masquable} onChange={e => updateBlock(i, { masquable: e.target.checked })} />
+              🔒 Masquable
+            </label>
             <div>
               <button type="button" className="icon-btn" onClick={() => moveBlock(i, -1)} disabled={i === 0} title="Monter">↑</button>
               <button type="button" className="icon-btn" onClick={() => moveBlock(i, 1)} disabled={i === blocks.length - 1} title="Descendre">↓</button>

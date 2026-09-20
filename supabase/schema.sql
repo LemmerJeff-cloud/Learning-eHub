@@ -1976,3 +1976,49 @@ insert into chapitres (id, titre_fr, emoji, description_fr, filieres, matiere_id
 
 
 commit;
+
+-- ── RÉVÉLATION DE CONTENU PAR CLASSE : MASQUAGE PROGRESSIF (2026-09-20) ──────
+-- Permet à un enseignant de cacher certains blocs de contenu (contenu.blocks[] des
+-- sections_cours de type 'blocs', marqués {"masquable": true} dans leur JSON) pour
+-- forcer une recherche des élèves avant révélation, granularité par CLASSE (pas
+-- filière) et bloc par bloc. Table volontairement "creuse" : l'absence de ligne pour
+-- un couple (classe, bloc) signifie "caché" ; le re-masquage supprime la ligne (pas
+-- d'historique demandé pour la v1). Les exercices interactifs (exercices/ExerciceRunner)
+-- ne sont PAS concernés par ce mécanisme.
+create table revele_etat (
+  id         uuid primary key default uuid_generate_v4(),
+  classe_id  uuid not null references classes(id) on delete cascade,
+  section_id uuid not null references sections_cours(id) on delete cascade,
+  bloc_id    uuid not null, -- id du bloc dans sections_cours.contenu.blocks[] (jsonb, pas de FK possible)
+  revele_par uuid references profiles(id) on delete set null,
+  revele_le  timestamptz not null default now(),
+  unique (classe_id, bloc_id)
+);
+create index on revele_etat(section_id);
+alter table revele_etat enable row level security;
+
+-- Lecture : le staff voit tout (utile pour prévisualiser d'autres classes) ; un élève
+-- ne voit que les lignes de sa propre classe.
+create policy "revele_etat_read" on revele_etat
+  for select using (
+    my_role() in ('admin','enseignant','enseignant_guest')
+    or (my_role() = 'eleve' and exists (
+      select 1 from profiles p where p.id = auth.uid() and p.classe_id = revele_etat.classe_id
+    ))
+  );
+
+-- Écriture : admin, ou enseignant à la fois rattaché à cette classe (enseignant_classes)
+-- ET habilité en écriture sur la matière de la section (can_edit_matiere), même garde-fou
+-- que chapitres_edit/sections_edit plus haut.
+create policy "revele_etat_write" on revele_etat
+  for all using (
+    my_role() = 'admin'
+    or (
+      my_role() = 'enseignant'
+      and exists (select 1 from enseignant_classes ec where ec.enseignant_id = auth.uid() and ec.classe_id = revele_etat.classe_id)
+      and exists (
+        select 1 from sections_cours sc, chapitres c, unnest(c.matiere_ids) mid
+        where sc.id = revele_etat.section_id and c.id = sc.chapitre_id and can_edit_matiere(mid)
+      )
+    )
+  );
