@@ -2022,3 +2022,34 @@ create policy "revele_etat_write" on revele_etat
       )
     )
   );
+
+
+-- ── AJOUT DE CONTENU : SECTION "INTRODUCTION AU MARKETING" (2026-09-21) ────
+-- Contenu de CH3_etude_de_marche.json / Section 1 ("Pourquoi faire une étude de marché ?
+-- Les trois optiques de l'entreprise") ajouté comme blocs à la section existante
+-- "Introduction au Marketing" (id 35e4f99f-...) plutôt qu'en tant que nouvelle section —
+-- cette section existait déjà avec une seule vidéo. Tableau du document source reformulé
+-- en 3 blocs "definition" (les tables HTML ne sont pas utilisées dans les sections de type
+-- 'blocs', réservé au type 'editeur'). Les 7 autres sections du chapitre existaient déjà.
+-- Ajout de Section 1 ("Pourquoi faire une étude de marché ? Les trois optiques") comme blocs
+-- dans la section existante "Introduction au Marketing" (video conservée en premier bloc).
+update sections_cours set contenu = '{"blocks":[{"id":"3be2096e-f9c9-4c79-81e1-23378da95ad7","src":"https://www.youtube.com/embed/U-bh1rmnX4Q","html":"","type":"video","provider":"youtube"},{"id":"b24ef483-a0ad-4330-8822-5205430779f4","type":"texte","html":"<p>Avant de détailler comment mener une étude de marché, il faut comprendre <strong>pourquoi</strong> les entreprises en ont besoin aujourd''hui. Leur façon de voir le marché a changé en trois grandes étapes, selon le rapport entre l''offre et la demande.</p>"},{"id":"9f731391-5901-42d6-860e-0883696155f9","type":"definition","html":"<p><strong>Avant 1950 : l''optique de production.</strong> La demande dépasse l''offre : produire en quantité suffit, tout ce qui est fabriqué se vend. L''entreprise ne se soucie pas encore de la manière de vendre ses produits.</p>"},{"id":"5d05212b-ac7f-460a-9237-5b1e84e1f414","type":"definition","html":"<p><strong>À partir des années 1950 : l''optique de vente.</strong> L''offre rejoint la demande et la concurrence augmente : il faut écouler la production plus vite que les concurrents, l''accent est mis sur la vente.</p>"},{"id":"a4979a4b-6279-4242-b731-e00c1b31687b","type":"definition","html":"<p><strong>À partir des années 1970 : l''optique des besoins</strong> (ou optique marketing). L''offre dépasse la demande et les ménages possèdent déjà les principaux biens de consommation durables : il faut séduire le client en proposant des produits qui répondent vraiment à ses besoins.</p>"},{"id":"3258f3e8-bd0a-4836-a8dd-76637bfaaa0b","type":"texte","html":"<p>C''est cette dernière étape, l''<strong>optique des besoins</strong>, qui reste la référence aujourd''hui : une entreprise conçoit d''abord son offre à partir des attentes du client. Mais pour connaître ces attentes, encore faut-il les recueillir : c''est exactement le rôle de l''étude de marché, que vous allez apprendre à mener dans ce module.</p>"}]}'::jsonb
+where id = '35e4f99f-1945-4dc0-b0c7-3a2ddca46401';
+
+insert into exercices (id, section_id, chapitre_id, titre, type, enonce, options, correction, points, ordre, parametres) values (
+  '83277d7a-6ed4-42ca-b541-426a8d036548', '35e4f99f-1945-4dc0-b0c7-3a2ddca46401', 'e4c74cf4-914c-4b8b-96be-99f8998926c4', 'Catégorisation — situation du marché et optique', 'categorisation', '<p>Associez chaque situation de marché à l''optique correspondante.</p>',
+  '{"items":[{"id":"i1","label":"La demande dépasse largement l''offre"},{"id":"i2","label":"L''offre rejoint la demande, la concurrence augmente"},{"id":"i3","label":"L''offre dépasse la demande, les clients sont déjà équipés"}],"categories":[{"id":"c1","label":"Optique de production"},{"id":"c2","label":"Optique de vente"},{"id":"c3","label":"Optique des besoins"}]}'::jsonb, '{"placements":{"i1":"c1","i2":"c2","i3":"c3"}}'::jsonb, 3,
+  coalesce((select max(ordre)+1 from exercices where section_id = '35e4f99f-1945-4dc0-b0c7-3a2ddca46401'), 0), '{"explication":"<p>Quand la demande dépasse l''offre, produire suffit (optique de production). Quand la concurrence augmente, il faut vendre plus vite que les autres (optique de vente). Quand l''offre dépasse la demande, il faut séduire le client avec des produits adaptés à ses besoins (optique des besoins).</p>"}'::jsonb
+);
+
+insert into exercices (id, section_id, chapitre_id, titre, type, enonce, options, correction, points, ordre, parametres) values (
+  '782dd88e-ae5a-4de5-9f50-cac62cb16f6e', '35e4f99f-1945-4dc0-b0c7-3a2ddca46401', 'e4c74cf4-914c-4b8b-96be-99f8998926c4', 'Choix unique — un exemple historique', 'choix_unique', '<p>Au début du XXe siècle, la Ford T n''est proposée que dans une seule couleur (le noir), pour produire plus vite et moins cher. Les clients l''achètent quand même, car les voitures sont rares. Quelle optique cette situation illustre-t-elle ?</p>',
+  '["Optique de production","Optique de vente","Optique des besoins","Aucune de ces optiques"]'::jsonb, '{"index":0}'::jsonb, 2,
+  coalesce((select max(ordre)+1 from exercices where section_id = '35e4f99f-1945-4dc0-b0c7-3a2ddca46401'), 0), '{"explication":"<p>La demande dépasse largement l''offre : Ford ne se préoccupe pas des attentes précises du client (comme la couleur), seule la quantité produite compte. C''est l''optique de production.</p>","feedback_faux":"<p>La demande dépasse-t-elle l''offre, ou l''inverse, dans cette situation ? Relis le tableau des trois étapes.</p>"}'::jsonb
+);
+
+insert into exercices (id, section_id, chapitre_id, titre, type, enonce, options, correction, points, ordre, parametres) values (
+  '8e0816b5-d683-4f0c-b1bd-88114cccac69', '35e4f99f-1945-4dc0-b0c7-3a2ddca46401', 'e4c74cf4-914c-4b8b-96be-99f8998926c4', 'Vrai/Faux — l''optique des besoins', 'vrai_faux', '<p>L''optique des besoins consiste à convaincre le client d''acheter un produit déjà fabriqué, sans tenir compte de ses attentes.</p>',
+  '[]'::jsonb, 'false'::jsonb, 1,
+  coalesce((select max(ordre)+1 from exercices where section_id = '35e4f99f-1945-4dc0-b0c7-3a2ddca46401'), 0), '{"explication":"<p>Faux : c''est la description de l''optique de vente. L''optique des besoins fait l''inverse : elle part des attentes du client pour concevoir le produit — c''est justement ce que sert à découvrir l''étude de marché.</p>","feedback_faux":"<p>Relis la définition de l''optique des besoins dans le tableau ci-dessus.</p>"}'::jsonb
+);
