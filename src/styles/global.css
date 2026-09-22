@@ -727,6 +727,24 @@ body {
   cursor: pointer;
 }
 
+.tiptap-fontsize-select {
+  padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-2); font-size: 0.78rem;
+  cursor: pointer; font-family: var(--font);
+}
+
+.tiptap-image-size-menu {
+  display: flex; gap: 3px; padding: 0.35rem;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+.tiptap-image-size-menu button {
+  padding: 4px 9px; border-radius: 4px; border: 1px solid transparent;
+  background: transparent; color: var(--text-2); font-size: 0.75rem;
+  cursor: pointer; font-family: var(--font); white-space: nowrap;
+}
+.tiptap-image-size-menu button:hover { background: var(--surface); color: var(--navy); }
+
 .tiptap-toolbar.mini { border-radius: var(--radius) var(--radius) 0 0; padding: 0.35rem; }
 .tiptap-editor.mini { min-height: 70px; padding: 0.7rem 0.9rem; }
 .mini-rich-editor { margin-bottom: 0; }

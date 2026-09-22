@@ -160,6 +160,12 @@ export default function PageCours({ matiereId, showToast }) {
     window.dispatchEvent(new CustomEvent('cours:chapitre', { detail: { id: currentCh?.id } }))
   }
 
+  function handleSectionMoved(newChapitreId) {
+    refreshSidebar()
+    const ch = chapitres.find(c => c.id === newChapitreId)
+    if (ch) openChapitre(ch)
+  }
+
   // ── Chapitres CRUD ──────────────────────────────────────────
   async function handleDeleteChapitre(ch) {
     try {
@@ -388,8 +394,10 @@ export default function PageCours({ matiereId, showToast }) {
         <SectionModal
           section={sectionModal === 'new' ? null : sectionModal}
           chapitreId={currentCh.id}
+          chapitres={chapitres}
           onClose={() => setSectionModal(null)}
           onSaved={() => { openChapitre(currentCh); refreshSidebar() }}
+          onMoved={handleSectionMoved}
           showToast={showToast}
         />
       )}
@@ -499,6 +507,7 @@ export default function PageCours({ matiereId, showToast }) {
           <SectionModal
             section={sectionModal === 'new' ? null : sectionModal}
             chapitreId={currentCh.id}
+            chapitres={chapitres}
             onClose={() => setSectionModal(null)}
             onSaved={async () => {
               refreshSidebar()
@@ -506,6 +515,7 @@ export default function PageCours({ matiereId, showToast }) {
               if (error) { showToast(error.message, 'error'); return }
               setCurrentSec(await ensureBlockIds(data))
             }}
+            onMoved={handleSectionMoved}
             showToast={showToast}
           />
         )}
