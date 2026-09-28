@@ -321,6 +321,10 @@ body {
   border: 1px solid rgba(76,175,80,0.2);
   border-left: 3px solid var(--cn);
 }
+.box-liste {
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
 .box p, .box ul, .box li { font-size: 0.88rem; color: var(--text-2); }
 .box ul { margin-left: 1.25rem; }
 .box li { margin-bottom: 0.3rem; }

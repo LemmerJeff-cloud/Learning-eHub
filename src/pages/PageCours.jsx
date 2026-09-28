@@ -616,7 +616,7 @@ function SectionBody({ sec, canEdit = false, revealedBlocIds, onToggleReveal }) 
     <div>{Array.isArray(c.fr) && c.fr.map((f, i) => <div key={i} className="formule-display">{f}</div>)}</div>
   )
   if (type === 'liste') return (
-    <div className="box box-definition">
+    <div className="box box-liste">
       <ul style={{ marginLeft: '1.25rem', lineHeight: 1.7 }}>
         {Array.isArray(c.fr) && c.fr.map((item, i) => <li key={i}>{item}</li>)}
       </ul>

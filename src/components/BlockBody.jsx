@@ -20,7 +20,7 @@ export default function BlockBody({ block }) {
     <div>{(block.items || []).map((f, i) => <div key={i} className="formule-display">{f}</div>)}</div>
   )
   if (block.type === 'liste') return (
-    <div className="box box-definition">
+    <div className="box box-liste">
       <ul style={{ marginLeft: '1.25rem', lineHeight: 1.7 }}>
         {(block.items || []).map((item, i) => <li key={i}>{item}</li>)}
       </ul>
