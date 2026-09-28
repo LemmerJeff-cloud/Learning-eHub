@@ -14,33 +14,61 @@ const TAGS = [
 const MOIS = ['JAN', 'FÉV', 'MAR', 'AVR', 'MAI', 'JUIN', 'JUIL', 'AOÛT', 'SEP', 'OCT', 'NOV', 'DÉC']
 const BUCKET = 'content-images'
 
+// Comme PageAccueil.jsx : un événement en période reste "à venir" tant que sa date de fin
+// n'est pas dépassée, pas seulement sa date de début.
+function eventEndDate(e) {
+  if (e.jour_fin && e.mois_fin && e.annee_fin) {
+    return new Date(e.annee_fin, MOIS.indexOf(e.mois_fin), e.jour_fin)
+  }
+  return new Date(e.annee, MOIS.indexOf(e.mois), e.jour)
+}
+
+const SUB_TABS = [
+  { id: 'venir',  label: 'Événements à venir' },
+  { id: 'passes', label: 'Événements passés' },
+]
+
 export default function AdminCalendrier({ showToast }) {
   const { user } = useAuth()
   const [items, setItems]     = useState([])
+  const [filieresList, setFilieresList] = useState([])
   const [nLycees, setNLycees] = useState(1)
   const [nFilieres, setNFilieres] = useState(1)
   const [loading, setLoading] = useState(true)
   const [modal, setModal]     = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [subTab, setSubTab]         = useState('venir')
+  const [filterMois, setFilterMois] = useState('')
+  const [filterFiliere, setFilterFiliere] = useState('')
 
   useEffect(() => { load() }, [])
 
   async function load() {
     setLoading(true)
-    const [{ data, error }, { count }, { count: countFilieres }] = await Promise.all([
+    const [{ data, error }, { count }, { data: filieresData, count: countFilieres }] = await Promise.all([
       supabase.from('calendrier').select('*'),
       supabase.from('lycees').select('*', { count: 'exact', head: true }),
-      supabase.from('filieres').select('*', { count: 'exact', head: true }),
+      supabase.from('filieres').select('*', { count: 'exact' }).order('ordre'),
     ])
     if (error) { showToast(error.message, 'error'); setLoading(false); return }
     const sorted = (data || []).sort((a, b) =>
       new Date(a.annee, MOIS.indexOf(a.mois), a.jour) - new Date(b.annee, MOIS.indexOf(b.mois), b.jour)
     )
     setItems(sorted)
+    setFilieresList(filieresData || [])
     setNLycees(count ?? 1)
     setNFilieres(countFilieres ?? 1)
     setLoading(false)
   }
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const filtered = items
+    .filter(e => subTab === 'passes' ? eventEndDate(e) < today : eventEndDate(e) >= today)
+    .filter(e => !filterMois || e.mois === filterMois)
+    .filter(e => !filterFiliere || e.filieres?.includes(filterFiliere))
+  if (subTab === 'passes') filtered.reverse()
 
   async function handleDelete(item) {
     const { error } = await supabase.from('calendrier').delete().eq('id', item.id)
@@ -54,12 +82,28 @@ export default function AdminCalendrier({ showToast }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.6rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {SUB_TABS.map(t => (
+            <button key={t.id} className={`fic-btn ${subTab === t.id ? 'active' : ''}`} onClick={() => setSubTab(t.id)}>{t.label}</button>
+          ))}
+        </div>
         <button className="fic-btn" onClick={() => setModal('new')}>➕ Nouvel événement</button>
       </div>
 
+      <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <select className="form-select" style={{ maxWidth: '160px' }} value={filterMois} onChange={e => setFilterMois(e.target.value)}>
+          <option value="">Tous les mois</option>
+          {MOIS.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+        <select className="form-select" style={{ maxWidth: '200px' }} value={filterFiliere} onChange={e => setFilterFiliere(e.target.value)}>
+          <option value="">Toutes les sections</option>
+          {filieresList.map(f => <option key={f.code} value={f.code}>{f.label}</option>)}
+        </select>
+      </div>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-        {items.map(e => (
+        {filtered.map(e => (
           <div key={e.id} className="cal-item" style={{ alignItems: 'center' }}>
             <div className="cal-date">
               <div className="cal-day">{e.jour}</div>
@@ -82,7 +126,11 @@ export default function AdminCalendrier({ showToast }) {
             <button className="icon-btn danger" style={{ marginLeft: '0.35rem' }} onClick={() => setConfirmDelete(e)} title="Supprimer">🗑️</button>
           </div>
         ))}
-        {items.length === 0 && <p className="empty-state">Aucun événement.</p>}
+        {filtered.length === 0 && (
+          <p className="empty-state">
+            {subTab === 'passes' ? 'Aucun événement passé.' : 'Aucun événement à venir.'}
+          </p>
+        )}
       </div>
 
       {modal && (

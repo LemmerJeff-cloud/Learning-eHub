@@ -41,14 +41,28 @@ export default function PageAccueil({ setPage, showToast }) {
     if (data) setActualites(data.filter(visibleForProfile).slice(0, 3))
   }
 
+  // Pour un événement en période (jour_fin/mois_fin/annee_fin renseignés), c'est la date de
+  // fin qui détermine s'il est encore "à venir" — un événement en cours ne doit pas disparaître.
+  function eventEndDate(e) {
+    if (e.jour_fin && e.mois_fin && e.annee_fin) {
+      return new Date(e.annee_fin, MOIS_ORDRE.indexOf(e.mois_fin), e.jour_fin)
+    }
+    return new Date(e.annee, MOIS_ORDRE.indexOf(e.mois), e.jour)
+  }
+
   async function loadCalendrier() {
     const { data } = await supabase
       .from('calendrier')
       .select('*')
     if (data) {
-      const sorted = data.filter(visibleForProfile).sort((a, b) =>
-        new Date(a.annee, MOIS_ORDRE.indexOf(a.mois), a.jour) - new Date(b.annee, MOIS_ORDRE.indexOf(b.mois), b.jour)
-      )
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const sorted = data
+        .filter(visibleForProfile)
+        .filter(e => eventEndDate(e) >= today)
+        .sort((a, b) =>
+          new Date(a.annee, MOIS_ORDRE.indexOf(a.mois), a.jour) - new Date(b.annee, MOIS_ORDRE.indexOf(b.mois), b.jour)
+        )
       setCalendrier(sorted)
     }
   }
