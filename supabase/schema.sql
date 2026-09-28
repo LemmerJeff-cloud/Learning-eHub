@@ -2082,3 +2082,27 @@ update calendrier set annee = case when mois in ('SEP','OCT','NOV','DÉC') then 
 update calendrier set annee_fin = case when mois_fin in ('SEP','OCT','NOV','DÉC') then 2026 else 2027 end where mois_fin is not null and annee_fin is null;
 
 alter table calendrier alter column annee set not null;
+
+
+-- ── MISE À JOUR ACTIVITÉ NOTÉE : ÉTUDE DE MARCHÉ (2026-09-28) ────────────────
+-- Remplace le contenu de "Activité notée : l'étude de marché de votre entreprise"
+-- (chapitre "Marketing 1 : L'étude de marché") par une version plus complète
+-- mobilisant Porter/PESTEL/SWOT, et ses 2 exercices (dossier écrit + présentation
+-- orale) par les 2 anciens (tableau de calcul + libre), non utilisés par des élèves.
+-- Remplace le contenu de la section "Activité notée : l'étude de marché de votre
+-- entreprise" (Porter/PESTEL/SWOT + dossier écrit + présentation orale, au lieu du
+-- texte plus court centré sur le questionnaire) et ses 2 exercices.
+update sections_cours set contenu = '{"contexte":"<p>Vous allez maintenant construire l''<strong>étude de marché complète</strong> de votre entreprise, en réutilisant toutes les méthodes vues dans ce module. Ce travail se structure en <strong>4 parties</strong>, à documenter dans un dossier écrit et à présenter à l''oral en classe.</p><p>Vous mobiliserez notamment le modèle des <strong>5 forces de Porter</strong> (vu en complément avec votre enseignant), la méthode <strong>PESTEL</strong>, la matrice <strong>SWOT</strong>, ainsi que la démarche de <strong>segmentation, ciblage et positionnement</strong>.</p>","phases":[{"label":"Présenter l''idée","question_depart":"<p>Présentez brièvement votre entreprise : le produit ou le service proposé, le besoin auquel il répond, et la clientèle visée à ce stade du projet. Cette présentation sert de point de départ aux analyses suivantes.</p>","consignes":[]},{"label":"Analyser le marché : Porter, PESTEL, SWOT","question_depart":"<p>Réalisez une analyse complète du marché de votre entreprise en trois étapes :</p><ul><li><strong>Les 5 forces de Porter</strong> : évaluez l''intensité concurrentielle de votre secteur (concurrents directs, nouveaux entrants potentiels, produits de substitution, pouvoir de négociation des clients et des fournisseurs).</li><li><strong>Le PESTEL</strong> : identifiez les facteurs de l''environnement macro (Politique, Économique, Socioculturel, Technologique, Écologique, Légal) qui influencent votre marché.</li><li><strong>Le SWOT</strong> : synthétisez vos Forces et Faiblesses internes, ainsi que les Opportunités et Menaces externes identifiées grâce au Porter et au PESTEL.</li></ul>","consignes":[]},{"label":"Analyser la demande et l''offre","question_depart":"<p><strong>La demande</strong> : identifiez qui sont vos clients potentiels, leurs besoins et leurs comportements d''achat. Ce travail s''appuie sur une <strong>véritable enquête</strong> : construisez un questionnaire réel et interrogez de vraies personnes (voir la section « Construire un questionnaire » de ce module).</p><p><strong>L''offre</strong> : identifiez vos concurrents directs et indirects, et ce qu''ils proposent déjà sur le marché (voir la section « La concurrence directe et indirecte »).</p>","consignes":[]},{"label":"Segmenter, cibler, positionner son marché","question_depart":"<p>À partir des résultats de votre enquête, définissez les segments de clientèle pertinents pour votre entreprise, choisissez une stratégie de ciblage (indifférencié, différencié, concentré ou one-to-one) et justifiez-la, puis définissez le positionnement que vous souhaitez occuper par rapport à vos concurrents (au besoin, à l''aide d''une carte perceptuelle).</p>","consignes":[]}]}'::jsonb
+where id = 'c080b4df-8f12-4dfb-90dd-a857743ff083';
+
+delete from exercices where id in ('83529385-d8c6-4d3c-803e-b2ab5b23748d', '98e67d1d-893d-4d1c-994c-65fdda87aa31');
+
+insert into exercices (id, section_id, chapitre_id, titre, type, enonce, options, correction, points, ordre, parametres) values (
+  'd915bfaa-0094-4db0-af45-2b0cb7ba3403', 'c080b4df-8f12-4dfb-90dd-a857743ff083', 'e4c74cf4-914c-4b8b-96be-99f8998926c4', 'Dossier écrit : étude de marché complète', 'libre', '<p>Rédigez et déposez le dossier écrit reprenant les 4 parties ci-dessus (idée, Porter/PESTEL/SWOT, demande/offre avec les résultats de votre enquête, segmentation-ciblage-positionnement).</p>',
+  '[]'::jsonb, '"<ul><li>Présentation de l''idée : clarté et cohérence (2 pts)</li><li>Analyse Porter/PESTEL/SWOT : pertinence et complétude (6 pts)</li><li>Analyse demande/offre : qualité de l''enquête réelle et de l''analyse concurrentielle (6 pts)</li><li>Segmentation/ciblage/positionnement : cohérence avec les données recueillies (6 pts)</li></ul>"'::jsonb, 20, 0, '{}'::jsonb
+);
+
+insert into exercices (id, section_id, chapitre_id, titre, type, enonce, options, correction, points, ordre, parametres) values (
+  '155e246e-4880-41ea-a7be-e083453b98cb', 'c080b4df-8f12-4dfb-90dd-a857743ff083', 'e4c74cf4-914c-4b8b-96be-99f8998926c4', 'Présentation orale en classe', 'libre', '<p>Présentez oralement en classe la synthèse de votre étude de marché (idée, principaux résultats des analyses, segment(s) ciblé(s) et positionnement retenu).</p>',
+  '[]'::jsonb, '"<ul><li>Clarté et structure de la présentation (5 pts)</li><li>Capacité à justifier les choix (ciblage, positionnement) (5 pts)</li></ul>"'::jsonb, 10, 1, '{}'::jsonb
+);
