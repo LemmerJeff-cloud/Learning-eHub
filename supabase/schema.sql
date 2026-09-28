@@ -2065,3 +2065,20 @@ insert into exercices (id, section_id, chapitre_id, titre, type, enonce, options
   '8a73fae8-0862-4e55-b78c-6caf55eaf79d', '15409d41-1254-40ad-9eee-03d06932a8ad', 'e4c74cf4-914c-4b8b-96be-99f8998926c4', 'Application 1 — Analyse SWOT de Luxair', 'categorisation', '<p>Déterminez, à l''aide de l''analyse SWOT, la nature de chacune des observations effectuées par les responsables de Luxair.</p>',
   '{"items":[{"id":"i1","label":"La situation économique est en train de se dégrader au Luxembourg."},{"id":"i2","label":"Le temps de loisir des gens a tendance à augmenter."},{"id":"i3","label":"Les compagnies « low cost » connaissent de plus en plus de succès."},{"id":"i4","label":"Les prix pratiqués par l''entreprise sont élevés par rapport aux prix de la concurrence."},{"id":"i5","label":"Réouverture de l''ancien terminal B en 2017."},{"id":"i6","label":"D''autres aéroports dans la Grande Région ont fortement investi dans leurs infrastructures."},{"id":"i7","label":"Le pouvoir d''achat est toujours très élevé au Luxembourg."},{"id":"i8","label":"Les clients s''informent plus et sont moins fidèles qu''il y a 10 ans encore."},{"id":"i9","label":"Le risque d''attentats terroristes a augmenté."},{"id":"i10","label":"L''Union européenne s''est élargie."},{"id":"i11","label":"L''offre des destinations de Luxair est très large."},{"id":"i12","label":"L''ambiance de travail au sein de l''entreprise s''est dégradée."}],"categories":[{"id":"c1","label":"Force"},{"id":"c2","label":"Faiblesse"},{"id":"c3","label":"Opportunité"},{"id":"c4","label":"Menace"}]}'::jsonb, '{"placements":{"i1":"c4","i2":"c3","i3":"c4","i4":"c2","i5":"c3","i6":"c4","i7":"c3","i8":"c4","i9":"c4","i10":"c3","i11":"c1","i12":"c2"}}'::jsonb, 12, 1, '{"explication":"<p>Forces et Faiblesses sont internes à Luxair : sa large offre de destinations (Force), ses prix élevés par rapport à la concurrence et la dégradation de l''ambiance de travail (Faiblesses). Toutes les autres observations viennent de l''environnement externe, subi par l''entreprise : la conjoncture (situation économique, pouvoir d''achat), la concurrence (compagnies low cost, investissements des aéroports voisins), les infrastructures aéroportuaires (réouverture du terminal B — qui appartient à l''aéroport, pas à Luxair), le comportement des clients, le contexte géopolitique (attentats) et européen (élargissement de l''UE). Elles sont classées en Opportunité si l''effet attendu est positif pour Luxair (temps de loisir en hausse, pouvoir d''achat élevé, réouverture du terminal, élargissement de l''UE) et en Menace s''il est négatif (dégradation économique, concurrence low cost, investissements des aéroports concurrents, clients moins fidèles, risque terroriste).</p>"}'::jsonb
 );
+
+
+-- ── CALENDRIER : AJOUT DE L'ANNÉE (2026-09-28) ───────────────────────────────
+-- Le tri par simple "jour" (sans tenir compte du mois) était déjà faux ; mais même
+-- en triant par mois, un calendrier scolaire (septembre → juillet) n'a pas de sens
+-- sans année : SEP (mois 9) triait après JAN (mois 1) alors que c'est le premier mois
+-- de l'année scolaire. Ajout d'une vraie année par événement (et "_fin" pour les
+-- événements en période, ex. à cheval sur deux années civiles).
+alter table calendrier add column if not exists annee integer;
+alter table calendrier add column if not exists annee_fin integer;
+
+-- Backfill des événements existants (pas d'année connue) : école 2026/2027 →
+-- SEP-DÉC = 2026, JAN-AOÛT = 2027.
+update calendrier set annee = case when mois in ('SEP','OCT','NOV','DÉC') then 2026 else 2027 end where annee is null;
+update calendrier set annee_fin = case when mois_fin in ('SEP','OCT','NOV','DÉC') then 2026 else 2027 end where mois_fin is not null and annee_fin is null;
+
+alter table calendrier alter column annee set not null;

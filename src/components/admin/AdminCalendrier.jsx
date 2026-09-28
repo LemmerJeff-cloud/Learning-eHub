@@ -28,12 +28,15 @@ export default function AdminCalendrier({ showToast }) {
   async function load() {
     setLoading(true)
     const [{ data, error }, { count }, { count: countFilieres }] = await Promise.all([
-      supabase.from('calendrier').select('*').order('jour'),
+      supabase.from('calendrier').select('*'),
       supabase.from('lycees').select('*', { count: 'exact', head: true }),
       supabase.from('filieres').select('*', { count: 'exact', head: true }),
     ])
     if (error) { showToast(error.message, 'error'); setLoading(false); return }
-    setItems(data)
+    const sorted = (data || []).sort((a, b) =>
+      new Date(a.annee, MOIS.indexOf(a.mois), a.jour) - new Date(b.annee, MOIS.indexOf(b.mois), b.jour)
+    )
+    setItems(sorted)
     setNLycees(count ?? 1)
     setNFilieres(countFilieres ?? 1)
     setLoading(false)
@@ -60,7 +63,7 @@ export default function AdminCalendrier({ showToast }) {
           <div key={e.id} className="cal-item" style={{ alignItems: 'center' }}>
             <div className="cal-date">
               <div className="cal-day">{e.jour}</div>
-              <div className="cal-month">{e.mois}</div>
+              <div className="cal-month">{e.mois} {e.annee}</div>
             </div>
             <div style={{ flex: 1 }}>
               <div className="cal-title">{e.titre}</div>
@@ -105,11 +108,14 @@ export default function AdminCalendrier({ showToast }) {
 
 function CalendrierModal({ item, userId, onClose, onSaved, showToast }) {
   const overlayClose = useOverlayClose(onClose)
+  const anneeCourante = new Date().getFullYear()
   const [jour, setJour]           = useState(item?.jour || 1)
   const [mois, setMois]           = useState(item?.mois || 'JAN')
+  const [annee, setAnnee]         = useState(item?.annee || anneeCourante)
   const [periode, setPeriode]     = useState(!!(item?.jour_fin || item?.mois_fin))
   const [jourFin, setJourFin]     = useState(item?.jour_fin || item?.jour || 1)
   const [moisFin, setMoisFin]     = useState(item?.mois_fin || item?.mois || 'JAN')
+  const [anneeFin, setAnneeFin]   = useState(item?.annee_fin || item?.annee || anneeCourante)
   const [titre, setTitre]         = useState(item?.titre || '')
   const [sousTitre, setSousTitre] = useState(item?.sous_titre || '')
   const [lieu, setLieu]           = useState(item?.lieu || '')
@@ -154,9 +160,10 @@ function CalendrierModal({ item, userId, onClose, onSaved, showToast }) {
     setLoading(true)
     try {
       const payload = {
-        jour: Number(jour), mois, titre, sous_titre: sousTitre, tag, fichiers, filieres, lycee_ids: lyceeIds,
+        jour: Number(jour), mois, annee: Number(annee), titre, sous_titre: sousTitre, tag, fichiers, filieres, lycee_ids: lyceeIds,
         lieu, horaire_debut: horaireDebut || null, horaire_fin: horaireFin || null, enseignants_only: enseignantsOnly,
         jour_fin: periode ? Number(jourFin) : null, mois_fin: periode ? moisFin : null,
+        annee_fin: periode ? Number(anneeFin) : null,
       }
       if (item) {
         const { error } = await supabase.from('calendrier').update(payload).eq('id', item.id)
@@ -200,6 +207,10 @@ function CalendrierModal({ item, userId, onClose, onSaved, showToast }) {
                 {MOIS.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>Année</label>
+              <input className="form-input" type="number" value={annee} onChange={e => setAnnee(e.target.value)} />
+            </div>
           </div>
           <div className="form-group">
             <label>
@@ -217,6 +228,10 @@ function CalendrierModal({ item, userId, onClose, onSaved, showToast }) {
                 <select className="form-select" value={moisFin} onChange={e => setMoisFin(e.target.value)}>
                   {MOIS.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
+              </div>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label>Année fin</label>
+                <input className="form-input" type="number" value={anneeFin} onChange={e => setAnneeFin(e.target.value)} />
               </div>
             </div>
           )}

@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
 
+// Même ordre que MOIS dans AdminCalendrier.jsx — `mois` est stocké en texte (abréviation),
+// un simple `.order('jour')` côté base ne trie donc que le jour du mois, pas le mois lui-même.
+const MOIS_ORDRE = ['JAN', 'FÉV', 'MAR', 'AVR', 'MAI', 'JUIN', 'JUIL', 'AOÛT', 'SEP', 'OCT', 'NOV', 'DÉC']
+
 export default function PageAccueil({ setPage, showToast }) {
   const { user, profile, isEleve, isProf, isAdmin, visibleFilieres, lyceeId } = useAuth()
   const [actualites, setActualites] = useState([])
@@ -41,8 +45,12 @@ export default function PageAccueil({ setPage, showToast }) {
     const { data } = await supabase
       .from('calendrier')
       .select('*')
-      .order('jour')
-    if (data) setCalendrier(data.filter(visibleForProfile).slice(0, 4))
+    if (data) {
+      const sorted = data.filter(visibleForProfile).sort((a, b) =>
+        new Date(a.annee, MOIS_ORDRE.indexOf(a.mois), a.jour) - new Date(b.annee, MOIS_ORDRE.indexOf(b.mois), b.jour)
+      )
+      setCalendrier(sorted)
+    }
   }
 
   function publicUrl(chemin) {
@@ -104,6 +112,7 @@ export default function PageAccueil({ setPage, showToast }) {
         {/* Calendrier */}
         <div className="dash-card">
           <div className="dash-card-header"><h3>À venir</h3></div>
+          <div className="cal-list">
           {calendrier.length === 0
             ? <p className="task-empty">Aucun événement.</p>
             : calendrier.map(e => (
@@ -132,6 +141,7 @@ export default function PageAccueil({ setPage, showToast }) {
               </div>
             ))
           }
+          </div>
         </div>
 
         {/* Accès rapide */}
