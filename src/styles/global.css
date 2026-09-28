@@ -712,7 +712,8 @@ body {
   font-size: 0.88rem; line-height: 1.75; color: var(--text);
 }
 .tiptap-editor:focus-within { border-color: var(--navy); }
-.tiptap-editor img { max-width: 100%; border-radius: var(--radius); }
+.tiptap-editor img,
+.html-content img { max-width: 100%; height: auto; border-radius: var(--radius); }
 .tiptap-editor table,
 .html-content table { border-collapse: collapse; width: 100%; margin: 0.75rem 0; }
 .tiptap-editor table td, .tiptap-editor table th,
