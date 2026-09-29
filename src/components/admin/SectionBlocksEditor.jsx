@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import StringListEditor from './StringListEditor'
 import MiniRichEditor from './MiniRichEditor'
+import MoveBlockModal from './MoveBlockModal'
 import { toEmbedUrl } from './VideoEmbedExtension'
 import { uploadContentImage, uploadContentVideo, uploadContentFile } from '../../lib/upload'
 
@@ -160,9 +161,10 @@ function FileBlockEditor({ block, onChange, showToast }) {
   )
 }
 
-export default function SectionBlocksEditor({ draft, onChange, showToast, revealProps }) {
+export default function SectionBlocksEditor({ draft, onChange, showToast, revealProps, chapitres, chapitreId, sectionId, onMoveBlock }) {
   const blocks = draft.blocks || []
   const { activeClasseId, myClasses, revealedBlocIds, onChangeActiveClasse, onToggleReveal } = revealProps || {}
+  const [movingBlock, setMovingBlock] = useState(null)
 
   function updateBlock(i, patch) {
     const next = [...blocks]
@@ -220,6 +222,9 @@ export default function SectionBlocksEditor({ draft, onChange, showToast, reveal
             <div>
               <button type="button" className="icon-btn" onClick={() => moveBlock(i, -1)} disabled={i === 0} title="Monter">↑</button>
               <button type="button" className="icon-btn" onClick={() => moveBlock(i, 1)} disabled={i === blocks.length - 1} title="Descendre">↓</button>
+              {chapitres?.length > 0 && (
+                <button type="button" className="icon-btn" style={{ marginLeft: '0.35rem' }} onClick={() => setMovingBlock(block)} title="Déplacer vers une autre section/chapitre">↗️</button>
+              )}
               <button type="button" className="icon-btn danger" style={{ marginLeft: '0.35rem' }} onClick={() => removeBlock(i)} title="Supprimer">🗑️</button>
             </div>
           </div>
@@ -247,6 +252,17 @@ export default function SectionBlocksEditor({ draft, onChange, showToast, reveal
         )
       })}
       <button type="button" className="fic-btn" onClick={addBlock}>➕ Ajouter un bloc</button>
+
+      {movingBlock && (
+        <MoveBlockModal
+          chapitres={chapitres}
+          currentChapitreId={chapitreId}
+          currentSectionId={sectionId}
+          onClose={() => setMovingBlock(null)}
+          onConfirm={(toChapitreId, toSectionId) => onMoveBlock?.(movingBlock, toChapitreId, toSectionId)}
+          showToast={showToast}
+        />
+      )}
     </div>
   )
 }

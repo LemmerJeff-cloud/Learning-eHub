@@ -166,6 +166,39 @@ export default function PageCours({ matiereId, showToast }) {
     if (ch) openChapitre(ch)
   }
 
+  async function handleMoveBlock(block, toChapitreId, toSectionId) {
+    try {
+      await backupChapitre(currentCh.id, `avant déplacement d'un bloc de la section "${currentSec.titre_fr}"`, user.id)
+      if (toChapitreId !== currentCh.id) {
+        await backupChapitre(toChapitreId, `avant réception d'un bloc déplacé depuis "${currentSec.titre_fr}"`, user.id)
+      }
+
+      const newBlocks = (contentDraft.blocks || []).filter(b => b.id !== block.id)
+      const { error: sourceError } = await supabase.from('sections_cours')
+        .update({ contenu: { ...contentDraft, blocks: newBlocks } })
+        .eq('id', currentSec.id)
+      if (sourceError) throw sourceError
+
+      const { data: targetSec, error: fetchError } = await supabase.from('sections_cours')
+        .select('contenu').eq('id', toSectionId).single()
+      if (fetchError) throw fetchError
+      const targetBlocks = [...(targetSec.contenu?.blocks || []), block]
+      const { error: targetError } = await supabase.from('sections_cours')
+        .update({ contenu: { ...targetSec.contenu, blocks: targetBlocks } })
+        .eq('id', toSectionId)
+      if (targetError) throw targetError
+
+      await supabase.from('revele_etat').update({ section_id: toSectionId }).eq('bloc_id', block.id)
+
+      setContentDraft({ ...contentDraft, blocks: newBlocks })
+      setCurrentSec(prev => ({ ...prev, contenu: { ...prev.contenu, blocks: newBlocks } }))
+      refreshSidebar()
+      showToast('Bloc déplacé', 'success')
+    } catch (err) {
+      showToast(err.message || 'Erreur', 'error')
+    }
+  }
+
   // ── Chapitres CRUD ──────────────────────────────────────────
   async function handleDeleteChapitre(ch) {
     try {
@@ -472,6 +505,10 @@ export default function PageCours({ matiereId, showToast }) {
                     onChangeActiveClasse: setActiveClasseId,
                     onToggleReveal: toggleReveal,
                   }}
+                  chapitres={chapitres}
+                  chapitreId={currentCh.id}
+                  sectionId={currentSec.id}
+                  onMoveBlock={handleMoveBlock}
                 />
                 <button className="btn-primary" style={{ width: 'auto', marginTop: '0.9rem', padding: '0.6rem 1.4rem' }}
                   onClick={handleSaveContent} disabled={savingSection}>
