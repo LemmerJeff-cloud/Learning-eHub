@@ -137,9 +137,12 @@ export default function PageCours({ matiereId, showToast }) {
     setCurrentPartie(null)
     setView('chapitre')
     window.dispatchEvent(new CustomEvent('cours:chapitre', { detail: { id: ch.id } }))
-    const { data, error } = await supabase.from('sections_cours').select('*').eq('chapitre_id', ch.id).is('parent_section_id', null).order('ordre')
+    const { data, error } = await supabase.from('sections_cours').select('*').eq('chapitre_id', ch.id).order('ordre')
     if (error) { showToast(error.message, 'error'); return }
-    setSections(visibleFilieres ? data.filter(s => s.filieres.some(f => visibleFilieres.includes(f))) : data)
+    const visible = visibleFilieres ? data.filter(s => s.filieres.some(f => visibleFilieres.includes(f))) : data
+    const topLevel = visible.filter(s => !s.parent_section_id)
+    topLevel.forEach(s => { s.parties = visible.filter(p => p.parent_section_id === s.id) })
+    setSections(topLevel)
   }
 
   async function loadParties(sectionId) {
@@ -474,15 +477,30 @@ export default function PageCours({ matiereId, showToast }) {
         <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
             {sections.map((s, i) => (
-              <SortableSectionRow
-                key={s.id}
-                section={s}
-                index={i}
-                editMode={editMode}
-                onOpen={() => openSection(currentCh.id, s.id)}
-                onEdit={() => setSectionModal(s)}
-                onDelete={() => setConfirmDelete({ type: 'section', item: s })}
-              />
+              <div key={s.id}>
+                <SortableSectionRow
+                  section={s}
+                  index={i}
+                  editMode={editMode}
+                  onOpen={() => openSection(currentCh.id, s.id)}
+                  onEdit={() => setSectionModal(s)}
+                  onDelete={() => setConfirmDelete({ type: 'section', item: s })}
+                />
+                {s.parties?.length > 0 && (
+                  <div className="parties-preview">
+                    {s.parties.map(p => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="partie-preview-item"
+                        onClick={async () => { await openSection(currentCh.id, s.id); openPartie(p.id) }}
+                      >
+                        {p.type === 'activite' ? '✏️ ' : ''}{p.titre_fr}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </SortableContext>
