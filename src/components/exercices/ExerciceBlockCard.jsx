@@ -5,7 +5,7 @@ import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } 
 import { CSS } from '@dnd-kit/utilities'
 import ExerciceCard from './ExerciceCard'
 
-function SortableExercice({ exercice, userId, canEdit, onEdit, onDelete, onPreview, showToast }) {
+function SortableExercice({ exercice, userId, canEdit, onEdit, onDelete, onMove, onPreview, showToast }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: exercice.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
   return (
@@ -17,6 +17,7 @@ function SortableExercice({ exercice, userId, canEdit, onEdit, onDelete, onPrevi
         dragHandleProps={canEdit ? { ...attributes, ...listeners } : null}
         onEdit={onEdit}
         onDelete={onDelete}
+        onMove={onMove}
         onPreview={onPreview}
         showToast={showToast}
       />
@@ -26,7 +27,7 @@ function SortableExercice({ exercice, userId, canEdit, onEdit, onDelete, onPrevi
 
 export default function ExerciceBlockCard({
   block, exercices, userId, canEdit, dragHandleProps,
-  onEditBlock, onDeleteBlock, onAddExercice, onEditExercice, onDeleteExercice, onPreviewExercice,
+  onEditBlock, onDeleteBlock, onAddExercice, onEditExercice, onDeleteExercice, onMoveExercice, onPreviewExercice,
   onChanged, showToast,
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
@@ -84,6 +85,7 @@ export default function ExerciceBlockCard({
                 canEdit={canEdit}
                 onEdit={() => onEditExercice(ex)}
                 onDelete={() => onDeleteExercice(ex)}
+                onMove={() => onMoveExercice(ex)}
                 onPreview={() => onPreviewExercice(ex)}
                 showToast={showToast}
               />

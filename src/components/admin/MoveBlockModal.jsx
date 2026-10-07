@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useOverlayClose } from '../../lib/useOverlayClose'
 
-export default function MoveBlockModal({ chapitres, currentChapitreId, currentSectionId, onClose, onConfirm, showToast }) {
+export default function MoveBlockModal({
+  chapitres, currentChapitreId, currentSectionId, onClose, onConfirm, showToast,
+  title = 'Déplacer le bloc', requireBlocsType = true,
+}) {
   const overlayClose = useOverlayClose(onClose)
   const [targetChapitreId, setTargetChapitreId] = useState(currentChapitreId)
   const [groups, setGroups]                     = useState([])
@@ -12,21 +15,22 @@ export default function MoveBlockModal({ chapitres, currentChapitreId, currentSe
 
   useEffect(() => { loadSections(targetChapitreId) }, [targetChapitreId])
 
-  // Regroupe les sections « blocs » sélectionnables par section de premier niveau — une
-  // section non-blocs (ex. type editeur) peut tout de même avoir des parties blocs, elle
-  // sert alors juste d'en-tête de groupe sans être elle-même sélectionnable.
+  // Regroupe les sections sélectionnables par section de premier niveau — une section non
+  // retenue elle-même (ex. type editeur, quand on exige « blocs ») peut tout de même avoir
+  // des parties éligibles, elle sert alors juste d'en-tête de groupe.
   async function loadSections(chId) {
     setLoading(true)
     setTargetSectionId('')
     const { data, error } = await supabase.from('sections_cours').select('id, titre_fr, type, parent_section_id').eq('chapitre_id', chId).order('ordre')
     if (error) { showToast(error.message, 'error'); setLoading(false); return }
     const all = data || []
+    const eligible = s => (!requireBlocsType || s.type === 'blocs') && s.id !== currentSectionId
     const topLevel = all.filter(s => !s.parent_section_id)
     const built = topLevel
       .map(top => ({
         top,
-        selectable: top.type === 'blocs' && top.id !== currentSectionId,
-        parties: all.filter(p => p.parent_section_id === top.id && p.type === 'blocs' && p.id !== currentSectionId),
+        selectable: eligible(top),
+        parties: all.filter(p => p.parent_section_id === top.id && eligible(p)),
       }))
       .filter(g => g.selectable || g.parties.length > 0)
     setGroups(built)
@@ -50,7 +54,7 @@ export default function MoveBlockModal({ chapitres, currentChapitreId, currentSe
     <div className="modal-overlay open" {...overlayClose}>
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
-        <h2>Déplacer le bloc</h2>
+        <h2>{title}</h2>
         <div className="form-group">
           <label>Chapitre</label>
           <select className="form-select" value={targetChapitreId} onChange={e => setTargetChapitreId(e.target.value)}>
@@ -62,7 +66,11 @@ export default function MoveBlockModal({ chapitres, currentChapitreId, currentSe
           {loading ? (
             <p style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Chargement…</p>
           ) : groups.length === 0 ? (
-            <p style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Aucune autre section ou partie « Contenu (blocs) » dans ce chapitre.</p>
+            <p style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>
+              {requireBlocsType
+                ? 'Aucune autre section ou partie « Contenu (blocs) » dans ce chapitre.'
+                : 'Aucune autre section ou partie dans ce chapitre.'}
+            </p>
           ) : (
             <select className="form-select" value={targetSectionId} onChange={e => setTargetSectionId(e.target.value)}>
               {groups.map(g => (

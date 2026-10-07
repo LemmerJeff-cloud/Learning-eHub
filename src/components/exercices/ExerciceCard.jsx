@@ -9,7 +9,7 @@ export const TYPE_LABELS = {
   tableau_calcul: 'Tableau de calcul', journal: 'Journal comptable',
 }
 
-export default function ExerciceCard({ exercice, userId, canEdit, dragHandleProps, onEdit, onDelete, onPreview, showToast }) {
+export default function ExerciceCard({ exercice, userId, canEdit, dragHandleProps, onEdit, onDelete, onMove, onPreview, showToast }) {
   return (
     <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1rem' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
@@ -28,6 +28,7 @@ export default function ExerciceCard({ exercice, userId, canEdit, dragHandleProp
           <div style={{ whiteSpace: 'nowrap' }}>
             {exercice.type !== 'libre' && <button className="icon-btn" onClick={onPreview} title="Aperçu élève">👁️</button>}
             <button className="icon-btn" style={{ marginLeft: '0.35rem' }} onClick={onEdit} title="Modifier">✏️</button>
+            {onMove && <button className="icon-btn" style={{ marginLeft: '0.35rem' }} onClick={onMove} title="Déplacer vers une autre section/chapitre">↗️</button>}
             <button className="icon-btn danger" style={{ marginLeft: '0.35rem' }} onClick={onDelete} title="Supprimer">🗑️</button>
           </div>
         )}

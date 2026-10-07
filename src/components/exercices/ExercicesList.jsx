@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../lib/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { backupChapitre } from '../../lib/backup'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -10,6 +11,7 @@ import ExerciceCard from './ExerciceCard'
 import ExerciceBlockCard from './ExerciceBlockCard'
 import ExercicePreview from './ExercicePreview'
 import ConfirmModal from '../admin/ConfirmModal'
+import MoveBlockModal from '../admin/MoveBlockModal'
 
 function SortableWrapper({ id, canEdit, children }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
@@ -27,10 +29,38 @@ export default function ExercicesList({ sectionId, chapitreId, matiereId, showTo
   const [blockModal, setBlockModal]       = useState(null) // null | 'new' | block
   const [confirmDelete, setConfirmDelete] = useState(null) // null | { kind:'exercice'|'block', item }
   const [previewExercice, setPreviewExercice] = useState(null)
+  const [movingExercice, setMovingExercice]   = useState(null)
+  const [chapitres, setChapitres]             = useState([])
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   useEffect(() => { load() }, [sectionId])
+
+  useEffect(() => {
+    if (!editable) return
+    supabase.from('chapitres').select('id, titre_fr').contains('matiere_ids', [matiereId]).order('ordre')
+      .then(({ data, error }) => { if (!error) setChapitres(data || []) })
+  }, [editable, matiereId])
+
+  async function handleMoveExercice(ex, toChapitreId, toSectionId) {
+    try {
+      await backupChapitre(chapitreId, `avant déplacement de l'exercice "${ex.titre}"`, user.id)
+      if (toChapitreId !== chapitreId) {
+        await backupChapitre(toChapitreId, `avant réception de l'exercice "${ex.titre}" déplacé`, user.id)
+      }
+      const { data: maxRows } = await supabase.from('exercices')
+        .select('ordre').eq('section_id', toSectionId).order('ordre', { ascending: false }).limit(1)
+      const ordre = (maxRows?.[0]?.ordre ?? -1) + 1
+      const { error } = await supabase.from('exercices')
+        .update({ section_id: toSectionId, chapitre_id: toChapitreId, block_id: null, ordre })
+        .eq('id', ex.id)
+      if (error) throw error
+      showToast('Exercice déplacé', 'success')
+      load()
+    } catch (err) {
+      showToast(err.message || 'Erreur', 'error')
+    }
+  }
 
   async function load() {
     setLoading(true)
@@ -111,6 +141,7 @@ export default function ExercicesList({ sectionId, chapitreId, matiereId, showTo
                     dragHandleProps={dragHandleProps}
                     onEdit={() => setExerciceModal({ mode: 'edit', exercice: item.data })}
                     onDelete={() => setConfirmDelete({ kind: 'exercice', item: item.data })}
+                    onMove={() => setMovingExercice(item.data)}
                     onPreview={() => setPreviewExercice(item.data)}
                     showToast={showToast}
                   />
@@ -126,6 +157,7 @@ export default function ExercicesList({ sectionId, chapitreId, matiereId, showTo
                     onAddExercice={() => setExerciceModal({ mode: 'new', blockId: item.data.id })}
                     onEditExercice={ex => setExerciceModal({ mode: 'edit', exercice: ex })}
                     onDeleteExercice={ex => setConfirmDelete({ kind: 'exercice', item: ex })}
+                    onMoveExercice={ex => setMovingExercice(ex)}
                     onPreviewExercice={ex => setPreviewExercice(ex)}
                     onChanged={load}
                     showToast={showToast}
@@ -174,6 +206,18 @@ export default function ExercicesList({ sectionId, chapitreId, matiereId, showTo
       )}
       {previewExercice && (
         <ExercicePreview exercice={previewExercice} onClose={() => setPreviewExercice(null)} />
+      )}
+      {movingExercice && (
+        <MoveBlockModal
+          title="Déplacer l'exercice"
+          requireBlocsType={false}
+          chapitres={chapitres}
+          currentChapitreId={chapitreId}
+          currentSectionId={sectionId}
+          onClose={() => setMovingExercice(null)}
+          onConfirm={(toChapitreId, toSectionId) => handleMoveExercice(movingExercice, toChapitreId, toSectionId)}
+          showToast={showToast}
+        />
       )}
     </div>
   )
