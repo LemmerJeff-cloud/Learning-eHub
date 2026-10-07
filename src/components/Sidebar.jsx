@@ -7,7 +7,9 @@ export default function Sidebar({ page, matiereId }) {
   const [chapitres, setChapitres] = useState([])
   const [chapitresLoading, setChapitresLoading] = useState(true)
   const [openChap, setOpenChap]   = useState(null)
+  const [openSec, setOpenSec]     = useState(null)
   const [activeSec, setActiveSec] = useState(null)
+  const [activePartie, setActivePartie] = useState(null)
   const [activeSub, setActiveSub] = useState(null)
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -25,34 +27,39 @@ export default function Sidebar({ page, matiereId }) {
   async function loadChapitres() {
     const { data } = await supabase
       .from('chapitres')
-      .select('id, titre_fr, emoji, filieres, ordre, sections_cours(id, titre_fr, type, filieres, ordre)')
+      .select('id, titre_fr, emoji, filieres, ordre, sections_cours(id, titre_fr, type, filieres, ordre, parent_section_id)')
       .contains('matiere_ids', [matiereId])
       .order('ordre')
     if (!data) { setChapitresLoading(false); return }
-    const filtered = data
-    filtered.forEach(ch => {
-      if (ch.sections_cours) {
-        ch.sections_cours.sort((a, b) => a.ordre - b.ordre)
-        if (visibleFilieres) ch.sections_cours = ch.sections_cours.filter(s => s.filieres.some(f => visibleFilieres.includes(f)))
-      }
+    data.forEach(ch => {
+      let secs = ch.sections_cours || []
+      if (visibleFilieres) secs = secs.filter(s => s.filieres.some(f => visibleFilieres.includes(f)))
+      const topLevel = secs.filter(s => !s.parent_section_id).sort((a, b) => a.ordre - b.ordre)
+      topLevel.forEach(s => {
+        s.parties = secs.filter(p => p.parent_section_id === s.id).sort((a, b) => a.ordre - b.ordre)
+      })
+      ch.sections_cours = topLevel
     })
-    setChapitres(filtered)
+    setChapitres(data)
     setChapitresLoading(false)
   }
 
   // Sync with PageCours navigation
   useEffect(() => {
-    function onChapitreOpen(e) { setOpenChap(e.detail.id); setActiveSec(null) }
-    function onSectionOpen(e)  { setOpenChap(e.detail.chId); setActiveSec(e.detail.secId) }
-    function onBack()          { setOpenChap(null); setActiveSec(null) }
+    function onChapitreOpen(e) { setOpenChap(e.detail.id); setOpenSec(null); setActiveSec(null); setActivePartie(null) }
+    function onSectionOpen(e)  { setOpenChap(e.detail.chId); setOpenSec(e.detail.secId); setActiveSec(e.detail.secId); setActivePartie(null) }
+    function onPartieOpen(e)   { setOpenChap(e.detail.chId); setOpenSec(e.detail.secId); setActiveSec(e.detail.secId); setActivePartie(e.detail.partieId) }
+    function onBack()          { setOpenChap(null); setOpenSec(null); setActiveSec(null); setActivePartie(null) }
     function onRefresh()       { loadChapitres() }
     window.addEventListener('cours:chapitre', onChapitreOpen)
     window.addEventListener('cours:section',  onSectionOpen)
+    window.addEventListener('cours:partie',   onPartieOpen)
     window.addEventListener('cours:back',     onBack)
     window.addEventListener('cours:refresh',  onRefresh)
     return () => {
       window.removeEventListener('cours:chapitre', onChapitreOpen)
       window.removeEventListener('cours:section',  onSectionOpen)
+      window.removeEventListener('cours:partie',   onPartieOpen)
       window.removeEventListener('cours:back',     onBack)
       window.removeEventListener('cours:refresh',  onRefresh)
     }
@@ -62,16 +69,29 @@ export default function Sidebar({ page, matiereId }) {
     const isOpen = openChap === ch.id
     const newOpen = isOpen ? null : ch.id
     setOpenChap(newOpen)
+    setOpenSec(null)
     setActiveSec(null)
+    setActivePartie(null)
     if (!isOpen) window.dispatchEvent(new CustomEvent('sidebar:chapitre', { detail: { id: ch.id } }))
     else window.dispatchEvent(new CustomEvent('sidebar:back'))
   }
 
   function selectSec(chId, secId) {
     setOpenChap(chId)
+    setOpenSec(secId)
     setActiveSec(secId)
+    setActivePartie(null)
     setMobileOpen(false)
     window.dispatchEvent(new CustomEvent('sidebar:section', { detail: { chId, secId } }))
+  }
+
+  function selectPartie(chId, secId, partieId) {
+    setOpenChap(chId)
+    setOpenSec(secId)
+    setActiveSec(secId)
+    setActivePartie(partieId)
+    setMobileOpen(false)
+    window.dispatchEvent(new CustomEvent('sidebar:partie', { detail: { chId, secId, partieId } }))
   }
 
   function selectSub(id) {
@@ -121,13 +141,30 @@ export default function Sidebar({ page, matiereId }) {
                 {openChap === ch.id && (
                   <div className="sidebar-subsections">
                     {ch.sections_cours?.map(s => (
-                      <button
-                        key={s.id}
-                        className={`sidebar-subsection ${activeSec === s.id ? 'active' : ''}`}
-                        onClick={() => selectSec(ch.id, s.id)}
-                      >
-                        {s.type === 'activite' ? '✏️ ' : ''}{s.titre_fr}
-                      </button>
+                      <div key={s.id}>
+                        <button
+                          className={`sidebar-subsection ${activeSec === s.id && !activePartie ? 'active' : ''}`}
+                          onClick={() => selectSec(ch.id, s.id)}
+                        >
+                          <span style={{ flex: 1 }}>{s.type === 'activite' ? '✏️ ' : ''}{s.titre_fr}</span>
+                          {s.parties?.length > 0 && (
+                            <span style={{ fontSize: '0.65rem', opacity: 0.6 }}>{openSec === s.id ? '▾' : '▸'}</span>
+                          )}
+                        </button>
+                        {openSec === s.id && s.parties?.length > 0 && (
+                          <div className="sidebar-subsections">
+                            {s.parties.map(p => (
+                              <button
+                                key={p.id}
+                                className={`sidebar-partie ${activePartie === p.id ? 'active' : ''}`}
+                                onClick={() => selectPartie(ch.id, s.id, p.id)}
+                              >
+                                {p.type === 'activite' ? '✏️ ' : ''}{p.titre_fr}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}

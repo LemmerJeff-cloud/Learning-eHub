@@ -2106,3 +2106,15 @@ insert into exercices (id, section_id, chapitre_id, titre, type, enonce, options
   '155e246e-4880-41ea-a7be-e083453b98cb', 'c080b4df-8f12-4dfb-90dd-a857743ff083', 'e4c74cf4-914c-4b8b-96be-99f8998926c4', 'Présentation orale en classe', 'libre', '<p>Présentez oralement en classe la synthèse de votre étude de marché (idée, principaux résultats des analyses, segment(s) ciblé(s) et positionnement retenu).</p>',
   '[]'::jsonb, '"<ul><li>Clarté et structure de la présentation (5 pts)</li><li>Capacité à justifier les choix (ciblage, positionnement) (5 pts)</li></ul>"'::jsonb, 10, 1, '{}'::jsonb
 );
+
+
+-- ── NIVEAU "PARTIE" : SECTIONS AUTO-RÉFÉRENTIELLES (2026-10-07) ────────────
+-- Une "partie" n'est pas une nouvelle table : c'est une sections_cours normale avec
+-- parent_section_id renseigné (= rattachée à une section de premier niveau du même
+-- chapitre). Permet de convertir une section existante en partie et inversement sans
+-- toucher à contenu ni exercices (qui référencent déjà section_id, quel que soit le
+-- niveau). Profondeur limitée à 1 niveau, imposée côté app (pas de contrainte SQL dédiée :
+-- les policies RLS existantes sur sections_cours sont déjà suffisantes, indépendantes
+-- de cette nouvelle colonne).
+alter table sections_cours add column if not exists parent_section_id uuid references sections_cours(id) on delete cascade;
+create index on sections_cours(parent_section_id);

@@ -22,8 +22,19 @@ export default function PageCours({ matiereId, showToast }) {
   const [chapitres, setChapitres]   = useState([])
   const [currentCh, setCurrentCh]   = useState(null)
   const [currentSec, setCurrentSec] = useState(null)
+  const [currentPartie, setCurrentPartie] = useState(null)
   const [sections, setSections]     = useState([])
+  const [parties, setParties]       = useState([])
   const [loading, setLoading]       = useState(false)
+
+  // La vue 'section' affiche le contenu de currentSec ; la vue 'partie' affiche celui de
+  // currentPartie. Les deux partagent le même bloc de rendu/édition (une partie est une
+  // sections_cours comme une autre, juste avec parent_section_id renseigné).
+  const openRow = view === 'partie' ? currentPartie : currentSec
+  function setOpenRow(updater) {
+    if (view === 'partie') setCurrentPartie(updater)
+    else setCurrentSec(updater)
+  }
 
   const [myClasses, setMyClasses]         = useState([])
   const [activeClasseId, setActiveClasseId] = useState('')
@@ -53,12 +64,12 @@ export default function PageCours({ matiereId, showToast }) {
   const classeIdActive = canEdit() ? activeClasseId : profile?.classe_id
 
   useEffect(() => {
-    if (view !== 'section' || !currentSec) { setRevealedBlocIds(new Set()); return }
+    if ((view !== 'section' && view !== 'partie') || !openRow) { setRevealedBlocIds(new Set()); return }
     if (!classeIdActive) { setRevealedBlocIds(new Set()); return }
-    fetchRevealedBlocIds(currentSec.id, classeIdActive)
+    fetchRevealedBlocIds(openRow.id, classeIdActive)
       .then(setRevealedBlocIds)
       .catch(err => showToast(err.message || 'Erreur', 'error'))
-  }, [currentSec, view, classeIdActive])
+  }, [openRow, view, classeIdActive])
 
   async function toggleReveal(blocId, isRevealed) {
     if (!classeIdActive) return
@@ -67,7 +78,7 @@ export default function PageCours({ matiereId, showToast }) {
         await hideBloc(blocId, classeIdActive)
         setRevealedBlocIds(prev => { const next = new Set(prev); next.delete(blocId); return next })
       } else {
-        await revealBloc(currentSec.id, blocId, classeIdActive, user.id)
+        await revealBloc(openRow.id, blocId, classeIdActive, user.id)
         setRevealedBlocIds(prev => new Set(prev).add(blocId))
       }
     } catch (err) {
@@ -76,17 +87,17 @@ export default function PageCours({ matiereId, showToast }) {
   }
 
   useEffect(() => {
-    if (!currentSec) return
-    const key = `${currentSec.id}:${currentSec.type}`
-    if (view === 'section' && currentSec.type === 'editeur' && editorLoadedFor !== key) {
-      setEditorHtml(currentSec.contenu?.html || '')
+    if (!openRow || (view !== 'section' && view !== 'partie')) return
+    const key = `${openRow.id}:${openRow.type}`
+    if (openRow.type === 'editeur' && editorLoadedFor !== key) {
+      setEditorHtml(openRow.contenu?.html || '')
       setEditorLoadedFor(key)
     }
-    if (view === 'section' && currentSec.type !== 'editeur' && contentLoadedFor !== key) {
-      setContentDraft(buildContentDraft(currentSec))
+    if (openRow.type !== 'editeur' && contentLoadedFor !== key) {
+      setContentDraft(buildContentDraft(openRow))
       setContentLoadedFor(key)
     }
-  }, [currentSec, view])
+  }, [openRow, view])
 
   useEffect(() => {
     function onChapitre(e) {
@@ -94,11 +105,17 @@ export default function PageCours({ matiereId, showToast }) {
       if (ch) openChapitre(ch)
     }
     function onSection(e) { openSection(e.detail.chId, e.detail.secId) }
+    async function onPartie(e) {
+      await openSection(e.detail.chId, e.detail.secId)
+      openPartie(e.detail.partieId)
+    }
     window.addEventListener('sidebar:chapitre', onChapitre)
     window.addEventListener('sidebar:section', onSection)
+    window.addEventListener('sidebar:partie', onPartie)
     return () => {
       window.removeEventListener('sidebar:chapitre', onChapitre)
       window.removeEventListener('sidebar:section', onSection)
+      window.removeEventListener('sidebar:partie', onPartie)
     }
   }, [chapitres, sections])
 
@@ -117,11 +134,18 @@ export default function PageCours({ matiereId, showToast }) {
   async function openChapitre(ch) {
     setCurrentCh(ch)
     setCurrentSec(null)
+    setCurrentPartie(null)
     setView('chapitre')
     window.dispatchEvent(new CustomEvent('cours:chapitre', { detail: { id: ch.id } }))
-    const { data, error } = await supabase.from('sections_cours').select('*').eq('chapitre_id', ch.id).order('ordre')
+    const { data, error } = await supabase.from('sections_cours').select('*').eq('chapitre_id', ch.id).is('parent_section_id', null).order('ordre')
     if (error) { showToast(error.message, 'error'); return }
     setSections(visibleFilieres ? data.filter(s => s.filieres.some(f => visibleFilieres.includes(f))) : data)
+  }
+
+  async function loadParties(sectionId) {
+    const { data, error } = await supabase.from('sections_cours').select('*').eq('parent_section_id', sectionId).order('ordre')
+    if (error) { showToast(error.message, 'error'); return }
+    setParties(visibleFilieres ? data.filter(s => s.filieres.some(f => visibleFilieres.includes(f))) : data)
   }
 
   // Les blocs importés avant la fonctionnalité de masquage n'ont pas de champ `id` propre
@@ -146,8 +170,18 @@ export default function PageCours({ matiereId, showToast }) {
     const { data, error } = await supabase.from('sections_cours').select('*').eq('id', secId).single()
     if (error) { showToast(error.message, 'error'); return }
     setCurrentSec(await ensureBlockIds(data))
+    setCurrentPartie(null)
     setView('section')
+    await loadParties(secId)
     window.dispatchEvent(new CustomEvent('cours:section', { detail: { chId, secId } }))
+  }
+
+  async function openPartie(partieId) {
+    const { data, error } = await supabase.from('sections_cours').select('*').eq('id', partieId).single()
+    if (error) { showToast(error.message, 'error'); return }
+    setCurrentPartie(await ensureBlockIds(data))
+    setView('partie')
+    window.dispatchEvent(new CustomEvent('cours:partie', { detail: { chId: currentCh.id, secId: currentSec.id, partieId } }))
   }
 
   function goList() {
@@ -160,23 +194,33 @@ export default function PageCours({ matiereId, showToast }) {
     window.dispatchEvent(new CustomEvent('cours:chapitre', { detail: { id: currentCh?.id } }))
   }
 
-  function handleSectionMoved(newChapitreId) {
+  function goSection() {
+    setView('section')
+    window.dispatchEvent(new CustomEvent('cours:section', { detail: { chId: currentCh?.id, secId: currentSec?.id } }))
+  }
+
+  // Après la modale de déplacement/conversion (SectionModal) : si la ligne a désormais un
+  // parent (devenue une partie), on atterrit sur la section parente ; sinon sur le chapitre
+  // (section de premier niveau, comme avant la fonctionnalité "partie").
+  function handleSectionMoved(newChapitreId, newParentId) {
     refreshSidebar()
     const ch = chapitres.find(c => c.id === newChapitreId)
-    if (ch) openChapitre(ch)
+    if (!ch) return
+    if (newParentId) openSection(newChapitreId, newParentId)
+    else openChapitre(ch)
   }
 
   async function handleMoveBlock(block, toChapitreId, toSectionId) {
     try {
-      await backupChapitre(currentCh.id, `avant déplacement d'un bloc de la section "${currentSec.titre_fr}"`, user.id)
+      await backupChapitre(currentCh.id, `avant déplacement d'un bloc de la section "${openRow.titre_fr}"`, user.id)
       if (toChapitreId !== currentCh.id) {
-        await backupChapitre(toChapitreId, `avant réception d'un bloc déplacé depuis "${currentSec.titre_fr}"`, user.id)
+        await backupChapitre(toChapitreId, `avant réception d'un bloc déplacé depuis "${openRow.titre_fr}"`, user.id)
       }
 
       const newBlocks = (contentDraft.blocks || []).filter(b => b.id !== block.id)
       const { error: sourceError } = await supabase.from('sections_cours')
         .update({ contenu: { ...contentDraft, blocks: newBlocks } })
-        .eq('id', currentSec.id)
+        .eq('id', openRow.id)
       if (sourceError) throw sourceError
 
       const { data: targetSec, error: fetchError } = await supabase.from('sections_cours')
@@ -191,7 +235,7 @@ export default function PageCours({ matiereId, showToast }) {
       await supabase.from('revele_etat').update({ section_id: toSectionId }).eq('bloc_id', block.id)
 
       setContentDraft({ ...contentDraft, blocks: newBlocks })
-      setCurrentSec(prev => ({ ...prev, contenu: { ...prev.contenu, blocks: newBlocks } }))
+      setOpenRow(prev => ({ ...prev, contenu: { ...prev.contenu, blocks: newBlocks } }))
       refreshSidebar()
       showToast('Bloc déplacé', 'success')
     } catch (err) {
@@ -216,15 +260,22 @@ export default function PageCours({ matiereId, showToast }) {
     }
   }
 
-  // ── Sections CRUD ───────────────────────────────────────────
+  // ── Sections / Parties CRUD ──────────────────────────────────
+  // Une "partie" est une sections_cours avec parent_section_id renseigné : la suppression
+  // est la même opération, seule la navigation de retour diffère.
   async function handleDeleteSection(s) {
     try {
-      await backupChapitre(currentCh.id, `avant suppression de la section "${s.titre_fr}"`, user.id)
+      await backupChapitre(currentCh.id, `avant suppression de "${s.titre_fr}"`, user.id)
       const { error } = await supabase.from('sections_cours').delete().eq('id', s.id)
       if (error) throw error
-      showToast('Section supprimée', 'success')
-      if (currentSec?.id === s.id) goChapitre()
-      openChapitre(currentCh)
+      showToast(s.parent_section_id ? 'Partie supprimée' : 'Section supprimée', 'success')
+      if (s.parent_section_id) {
+        if (currentPartie?.id === s.id) { setCurrentPartie(null); setView('section') }
+        await loadParties(s.parent_section_id)
+      } else {
+        if (currentSec?.id === s.id) goChapitre()
+        openChapitre(currentCh)
+      }
       refreshSidebar()
     } catch (err) {
       showToast(err.message || 'Erreur', 'error')
@@ -253,15 +304,35 @@ export default function PageCours({ matiereId, showToast }) {
     }
   }
 
+  async function handleDragEndParties(event) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = parties.findIndex(s => s.id === active.id)
+    const newIndex = parties.findIndex(s => s.id === over.id)
+    const reordered = arrayMove(parties, oldIndex, newIndex)
+    const previous = parties
+    setParties(reordered)
+    try {
+      await backupChapitre(currentCh.id, `avant réordonnancement des parties de "${currentSec.titre_fr}"`, user.id)
+      const results = await Promise.all(reordered.map((s, i) => supabase.from('sections_cours').update({ ordre: i }).eq('id', s.id)))
+      const failed = results.find(r => r.error)
+      if (failed) throw failed.error
+      refreshSidebar()
+    } catch (err) {
+      setParties(previous)
+      showToast(err.message || 'Erreur lors du réordonnancement', 'error')
+    }
+  }
+
   async function handleSaveEditeur() {
     setSavingSection(true)
     try {
-      await backupChapitre(currentCh.id, `avant modification de la section "${currentSec.titre_fr}"`, user.id)
+      await backupChapitre(currentCh.id, `avant modification de la section "${openRow.titre_fr}"`, user.id)
       const { error } = await supabase.from('sections_cours')
         .update({ contenu: { html: editorHtml } })
-        .eq('id', currentSec.id)
+        .eq('id', openRow.id)
       if (error) throw error
-      setCurrentSec({ ...currentSec, contenu: { html: editorHtml } })
+      setOpenRow({ ...openRow, contenu: { html: editorHtml } })
       showToast('Contenu enregistré', 'success')
     } catch (err) {
       showToast(err.message || 'Erreur', 'error')
@@ -287,12 +358,12 @@ export default function PageCours({ matiereId, showToast }) {
   async function handleSaveContent() {
     setSavingSection(true)
     try {
-      await backupChapitre(currentCh.id, `avant modification de la section "${currentSec.titre_fr}"`, user.id)
+      await backupChapitre(currentCh.id, `avant modification de la section "${openRow.titre_fr}"`, user.id)
       const { error } = await supabase.from('sections_cours')
         .update({ contenu: contentDraft })
-        .eq('id', currentSec.id)
+        .eq('id', openRow.id)
       if (error) throw error
-      setCurrentSec({ ...currentSec, contenu: contentDraft })
+      setOpenRow({ ...openRow, contenu: contentDraft })
       showToast('Contenu enregistré', 'success')
     } catch (err) {
       showToast(err.message || 'Erreur', 'error')
@@ -445,10 +516,12 @@ export default function PageCours({ matiereId, showToast }) {
     </div>
   )
 
-  if (view === 'section' && currentSec) {
-    const idx  = sections.findIndex(s => s.id === currentSec.id)
-    const prev = idx > 0 ? sections[idx - 1] : null
-    const next = idx < sections.length - 1 ? sections[idx + 1] : null
+  if ((view === 'section' || view === 'partie') && openRow) {
+    const siblings    = view === 'partie' ? parties : sections
+    const openSibling = id => view === 'partie' ? openPartie(id) : openSection(currentCh.id, id)
+    const idx  = siblings.findIndex(s => s.id === openRow.id)
+    const prev = idx > 0 ? siblings[idx - 1] : null
+    const next = idx < siblings.length - 1 ? siblings[idx + 1] : null
 
     return (
       <div>
@@ -457,8 +530,14 @@ export default function PageCours({ matiereId, showToast }) {
             <button onClick={goList}>Cours</button>
             <span className="bc-sep">›</span>
             <button onClick={goChapitre}>{currentCh?.titre_fr}</button>
+            {view === 'partie' && (
+              <>
+                <span className="bc-sep">›</span>
+                <button onClick={goSection}>{currentSec?.titre_fr}</button>
+              </>
+            )}
             <span className="bc-sep">›</span>
-            <span>{currentSec.titre_fr}</span>
+            <span>{openRow.titre_fr}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             {canEdit() && myClasses.length > 0 && (
@@ -470,19 +549,19 @@ export default function PageCours({ matiereId, showToast }) {
 
         {canEdit() && editMode && (
           <div className="edit-mode-bar">
-            <span>{currentSec.titre_fr} — {currentSec.type}</span>
-            <button className="fic-btn" onClick={() => setSectionModal(currentSec)}>✏️ Métadonnées</button>
+            <span>{openRow.titre_fr} — {openRow.type}</span>
+            <button className="fic-btn" onClick={() => setSectionModal(openRow)}>✏️ Métadonnées</button>
           </div>
         )}
 
         <div className="cours-section-block">
           <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 700, color: 'var(--navy)' }}>
-            {currentSec.titre_fr}
+            {openRow.titre_fr}
           </h3>
-          {canEdit() && editMode && currentSec.type === 'editeur' ? (
-            editorLoadedFor === `${currentSec.id}:${currentSec.type}` ? (
+          {canEdit() && editMode && openRow.type === 'editeur' ? (
+            editorLoadedFor === `${openRow.id}:${openRow.type}` ? (
               <div>
-                <TiptapEditor key={currentSec.id} content={editorHtml} onChange={setEditorHtml} showToast={showToast} />
+                <TiptapEditor key={openRow.id} content={editorHtml} onChange={setEditorHtml} showToast={showToast} />
                 <button className="btn-primary" style={{ width: 'auto', marginTop: '0.9rem', padding: '0.6rem 1.4rem' }}
                   onClick={handleSaveEditeur} disabled={savingSection}>
                   {savingSection ? 'Enregistrement…' : '💾 Enregistrer'}
@@ -493,10 +572,10 @@ export default function PageCours({ matiereId, showToast }) {
               <p style={{ color: 'var(--text-3)' }}>Chargement…</p>
             )
           ) : canEdit() && editMode ? (
-            contentLoadedFor === `${currentSec.id}:${currentSec.type}` ? (
+            contentLoadedFor === `${openRow.id}:${openRow.type}` ? (
               <div>
                 <SectionContentEditor
-                  type={currentSec.type}
+                  type={openRow.type}
                   draft={contentDraft}
                   onChange={setContentDraft}
                   showToast={showToast}
@@ -507,21 +586,21 @@ export default function PageCours({ matiereId, showToast }) {
                   }}
                   chapitres={chapitres}
                   chapitreId={currentCh.id}
-                  sectionId={currentSec.id}
+                  sectionId={openRow.id}
                   onMoveBlock={handleMoveBlock}
                 />
                 <button className="btn-primary" style={{ width: 'auto', marginTop: '0.9rem', padding: '0.6rem 1.4rem' }}
                   onClick={handleSaveContent} disabled={savingSection}>
                   {savingSection ? 'Enregistrement…' : '💾 Enregistrer'}
                 </button>
-                <PreviewPane sec={{ type: currentSec.type, contenu: contentDraft }} />
+                <PreviewPane sec={{ type: openRow.type, contenu: contentDraft }} />
               </div>
             ) : (
               <p style={{ color: 'var(--text-3)' }}>Chargement…</p>
             )
           ) : (
             <SectionBody
-              sec={currentSec}
+              sec={openRow}
               canEdit={canEdit()}
               revealedBlocIds={revealedBlocIds}
               onToggleReveal={toggleReveal}
@@ -529,31 +608,78 @@ export default function PageCours({ matiereId, showToast }) {
           )}
         </div>
 
-        <ExercicesList sectionId={currentSec.id} chapitreId={currentCh.id} matiereId={matiereId} showToast={showToast} />
+        <ExercicesList sectionId={openRow.id} chapitreId={currentCh.id} matiereId={matiereId} showToast={showToast} />
+
+        {view === 'section' && (
+          <div className="cours-section-block" style={{ marginTop: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: parties.length > 0 ? '1rem' : 0 }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--navy)' }}>Parties</h3>
+            </div>
+            {parties.length > 0 && (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndParties}>
+                <SortableContext items={parties.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    {parties.map((s, i) => (
+                      <SortableSectionRow
+                        key={s.id}
+                        section={s}
+                        index={i}
+                        editMode={editMode}
+                        onOpen={() => openPartie(s.id)}
+                        onEdit={() => setSectionModal(s)}
+                        onDelete={() => setConfirmDelete({ type: 'section', item: s })}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )}
+            {editMode && (
+              <button className="fic-btn" style={{ marginTop: '0.75rem' }} onClick={() => setSectionModal('new-partie')}>
+                ➕ Nouvelle partie
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="cours-nav">
           {prev && (
-            <button className="btn-nav" onClick={() => openSection(currentCh.id, prev.id)}>← {prev.titre_fr}</button>
+            <button className="btn-nav" onClick={() => openSibling(prev.id)}>← {prev.titre_fr}</button>
           )}
           {next && (
-            <button className="btn-nav next" onClick={() => openSection(currentCh.id, next.id)}>{next.titre_fr} →</button>
+            <button className="btn-nav next" onClick={() => openSibling(next.id)}>{next.titre_fr} →</button>
           )}
         </div>
 
         {sectionModal && (
           <SectionModal
-            section={sectionModal === 'new' ? null : sectionModal}
+            section={typeof sectionModal === 'string' ? null : sectionModal}
             chapitreId={currentCh.id}
+            parentSectionId={sectionModal === 'new-partie' ? currentSec.id : null}
             chapitres={chapitres}
             onClose={() => setSectionModal(null)}
             onSaved={async () => {
               refreshSidebar()
-              const { data, error } = await supabase.from('sections_cours').select('*').eq('id', currentSec.id).single()
-              if (error) { showToast(error.message, 'error'); return }
-              setCurrentSec(await ensureBlockIds(data))
+              if (currentSec) {
+                const { data, error } = await supabase.from('sections_cours').select('*').eq('id', currentSec.id).single()
+                if (!error) setCurrentSec(await ensureBlockIds(data))
+                await loadParties(currentSec.id)
+              }
+              if (currentPartie) {
+                const { data, error } = await supabase.from('sections_cours').select('*').eq('id', currentPartie.id).single()
+                if (!error) setCurrentPartie(await ensureBlockIds(data))
+              }
             }}
             onMoved={handleSectionMoved}
             showToast={showToast}
+          />
+        )}
+        {confirmDelete?.type === 'section' && (
+          <ConfirmModal
+            title={confirmDelete.item.parent_section_id ? 'Supprimer cette partie ?' : 'Supprimer cette section ?'}
+            message={`"${confirmDelete.item.titre_fr}" sera supprimée définitivement (une sauvegarde est créée automatiquement).`}
+            onCancel={() => setConfirmDelete(null)}
+            onConfirm={() => handleDeleteSection(confirmDelete.item)}
           />
         )}
       </div>

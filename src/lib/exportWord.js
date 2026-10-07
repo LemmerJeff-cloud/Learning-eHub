@@ -199,41 +199,56 @@ function bulletItem(text) {
   return new Paragraph({ children: [new TextRun(text)], bullet: { level: 0 } })
 }
 
+// Le contenu d'UNE section ou partie (même forme de ligne) — extrait pour pouvoir être
+// appelé aussi bien pour une section de premier niveau que pour chacune de ses parties.
+async function renderSectionContent(sec, children) {
+  const c = sec.contenu || {}
+
+  if (sec.type === 'blocs') {
+    for (const block of c.blocks || []) {
+      children.push(...await blockToDocxParagraphs(block))
+    }
+  } else if (sec.type === 'definition' || sec.type === 'exemple') {
+    children.push(...await blockToDocxParagraphs({ type: sec.type, html: c.fr }))
+  } else if (sec.type === 'formule') {
+    children.push(...await blockToDocxParagraphs({ type: 'formule', items: c.fr }))
+  } else if (sec.type === 'liste') {
+    children.push(...await blockToDocxParagraphs({ type: 'liste', items: c.fr }))
+  } else if (sec.type === 'activite') {
+    children.push(plain('✏️ Tâche à réaliser', { bold: true }))
+    if (c.contexte) {
+      children.push(plain('Contexte', { bold: true }))
+      children.push(...await blocksFromHtml(c.contexte))
+    }
+    for (const phase of c.phases || []) {
+      children.push(heading(phase.label || 'Phase', HeadingLevel.HEADING_2))
+      if (phase.question_depart) {
+        children.push(plain('❓ Question de départ', { bold: true }))
+        children.push(...await blocksFromHtml(phase.question_depart))
+      }
+      ;(phase.consignes || []).forEach(ci => children.push(bulletItem(ci)))
+    }
+  } else if (sec.type === 'editeur') {
+    children.push(...await blocksFromHtml(c.html))
+  }
+}
+
 export async function buildChapitreDocx(chapitre, sections) {
   const children = []
   children.push(new Paragraph({ text: [chapitre.emoji, chapitre.titre_fr].filter(Boolean).join(' '), heading: HeadingLevel.TITLE, spacing: { after: 200 } }))
   if (chapitre.description_fr) children.push(plain(chapitre.description_fr, { italics: true, color: '666666' }))
 
-  for (const sec of sections) {
+  // `sections` peut contenir des parties (parent_section_id renseigné) à plat, mélangées
+  // aux sections de premier niveau — on les niche en HEADING_2 sous leur section parente.
+  const topLevel = sections.filter(s => !s.parent_section_id)
+  for (const sec of topLevel) {
     children.push(heading(sec.titre_fr, HeadingLevel.HEADING_1))
-    const c = sec.contenu || {}
+    await renderSectionContent(sec, children)
 
-    if (sec.type === 'blocs') {
-      for (const block of c.blocks || []) {
-        children.push(...await blockToDocxParagraphs(block))
-      }
-    } else if (sec.type === 'definition' || sec.type === 'exemple') {
-      children.push(...await blockToDocxParagraphs({ type: sec.type, html: c.fr }))
-    } else if (sec.type === 'formule') {
-      children.push(...await blockToDocxParagraphs({ type: 'formule', items: c.fr }))
-    } else if (sec.type === 'liste') {
-      children.push(...await blockToDocxParagraphs({ type: 'liste', items: c.fr }))
-    } else if (sec.type === 'activite') {
-      children.push(plain('✏️ Tâche à réaliser', { bold: true }))
-      if (c.contexte) {
-        children.push(plain('Contexte', { bold: true }))
-        children.push(...await blocksFromHtml(c.contexte))
-      }
-      for (const phase of c.phases || []) {
-        children.push(heading(phase.label || 'Phase', HeadingLevel.HEADING_2))
-        if (phase.question_depart) {
-          children.push(plain('❓ Question de départ', { bold: true }))
-          children.push(...await blocksFromHtml(phase.question_depart))
-        }
-        ;(phase.consignes || []).forEach(ci => children.push(bulletItem(ci)))
-      }
-    } else if (sec.type === 'editeur') {
-      children.push(...await blocksFromHtml(c.html))
+    const parties = sections.filter(s => s.parent_section_id === sec.id).sort((a, b) => a.ordre - b.ordre)
+    for (const partie of parties) {
+      children.push(heading(partie.titre_fr, HeadingLevel.HEADING_2))
+      await renderSectionContent(partie, children)
     }
   }
 

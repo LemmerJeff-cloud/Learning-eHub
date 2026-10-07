@@ -262,6 +262,21 @@ body {
   background: rgba(255,255,255,0.06);
 }
 
+.sidebar-partie {
+  display: flex; align-items: center;
+  padding: 0.35rem 1.25rem 0.35rem 3.75rem;
+  border: none; background: transparent;
+  color: rgba(255,255,255,0.38); font-size: 0.72rem;
+  cursor: pointer; width: 100%; text-align: left;
+  border-left: 3px solid transparent; transition: all 0.12s;
+  font-family: var(--font); line-height: 1.4;
+}
+.sidebar-partie:hover  { color: rgba(255,255,255,0.75); }
+.sidebar-partie.active {
+  color: #fff; border-left-color: var(--accent);
+  background: rgba(255,255,255,0.06);
+}
+
 .sidebar-bottom {
   margin-top: auto; padding: 1rem 1.1rem;
   border-top: 1px solid rgba(255,255,255,0.1);
@@ -909,7 +924,7 @@ body {
 
 /* Cibles tactiles confortables sur iPad/mobile */
 @media (hover: none) and (pointer: coarse) {
-  .nav1-btn, .sidebar-item, .sidebar-chapitre, .sidebar-subsection,
+  .nav1-btn, .sidebar-item, .sidebar-chapitre, .sidebar-subsection, .sidebar-partie,
   .nav-mobile-item, .fic-btn, .btn-submit, .tiptap-toolbar button {
     min-height: 40px;
   }
