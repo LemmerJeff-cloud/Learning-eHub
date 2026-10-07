@@ -18,7 +18,7 @@ const BLOCK_TYPES = [
 
 function defaultsForBlockType(type) {
   if (type === 'formule' || type === 'liste') return { items: [''] }
-  if (type === 'video') return { src: '', provider: '' }
+  if (type === 'video') return { src: '', provider: '', titre: '', legende: '' }
   if (type === 'image') return { src: '', alt: '' }
   if (type === 'fichier') return { url: '', nom: '' }
   return { html: '' } // texte, definition, exemple
@@ -93,12 +93,22 @@ function VideoBlockEditor({ block, onChange, showToast }) {
   if (block.src) {
     return (
       <div>
+        <input
+          className="form-input" style={{ marginBottom: '0.5rem' }}
+          placeholder="Titre au-dessus de la vidéo (optionnel)"
+          value={block.titre || ''} onChange={e => onChange({ titre: e.target.value })}
+        />
         <div className="video-embed">
           {block.provider === 'file'
             ? <video src={block.src} controls style={{ width: '100%', borderRadius: 'var(--radius)' }} />
             : <iframe src={block.src} frameBorder="0" allowFullScreen title="Vidéo" style={{ width: '100%', aspectRatio: '16/9', border: 0, borderRadius: 'var(--radius)' }} />}
         </div>
-        <button type="button" className="icon-btn danger" style={{ marginTop: '0.5rem' }} onClick={() => onChange({ src: '', provider: '' })}>🗑️ Retirer la vidéo</button>
+        <input
+          className="form-input" style={{ marginTop: '0.5rem' }}
+          placeholder="Phrase d'explication sous la vidéo (optionnel)"
+          value={block.legende || ''} onChange={e => onChange({ legende: e.target.value })}
+        />
+        <button type="button" className="icon-btn danger" style={{ marginTop: '0.5rem' }} onClick={() => onChange({ src: '', provider: '', titre: '', legende: '' })}>🗑️ Retirer la vidéo</button>
       </div>
     )
   }

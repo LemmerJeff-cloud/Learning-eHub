@@ -770,6 +770,8 @@ body {
 .video-embed { margin: 0.75rem 0; }
 .video-embed iframe, .tiptap-editor iframe[data-video-embed] { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--radius); }
 .video-embed video, .tiptap-editor video { width: 100%; border-radius: var(--radius); }
+.video-titre { margin-bottom: 0.5rem; font-size: 0.95rem; font-weight: 700; color: var(--navy); text-align: center; }
+.video-legende { margin-top: 0.5rem; font-size: 0.82rem; color: var(--text-3); text-align: center; }
 .tiptap-editor div[data-video-embed] { margin: 0.75rem 0; }
 .tiptap-editor div[data-video-embed] iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--radius); }
 .tiptap-editor div[data-video-embed] video { width: 100%; border-radius: var(--radius); }

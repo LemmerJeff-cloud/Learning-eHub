@@ -33,9 +33,11 @@ export default function BlockBody({ block }) {
   )
   if (block.type === 'video') return !block.src ? null : (
     <div className="video-embed">
+      {block.titre && <div className="video-titre">{block.titre}</div>}
       {block.provider === 'file'
         ? <video src={block.src} controls style={{ width: '100%', borderRadius: 'var(--radius)' }} />
         : <iframe src={block.src} frameBorder="0" allowFullScreen title="Vidéo" style={{ width: '100%', aspectRatio: '16/9', border: 0, borderRadius: 'var(--radius)' }} />}
+      {block.legende && <div className="video-legende">{block.legende}</div>}
     </div>
   )
   if (block.type === 'fichier') return !block.url ? null : (
