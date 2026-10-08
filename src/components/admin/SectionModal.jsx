@@ -11,7 +11,18 @@ const TYPES = [
   { value: 'editeur',  label: 'Éditeur riche (mise en page libre)' },
 ]
 
-export default function SectionModal({ section, chapitreId, parentSectionId, chapitres, onClose, onSaved, onMoved, showToast }) {
+// Les chapitres passés ici couvrent toutes les matières (un chapitre peut être partagé
+// entre plusieurs) — on les groupe par matière pour la lisibilité du <select>.
+function groupByMatiere(chapitres, matieresById) {
+  const groups = {}
+  for (const c of chapitres) {
+    const label = (c.matiere_ids || []).map(id => matieresById?.[id]).filter(Boolean).join(' / ') || 'Autre'
+    ;(groups[label] ||= []).push(c)
+  }
+  return Object.entries(groups)
+}
+
+export default function SectionModal({ section, chapitreId, parentSectionId, chapitres, matieresById, onClose, onSaved, onMoved, showToast }) {
   const overlayClose = useOverlayClose(onClose)
   const { user, visibleFilieres } = useAuth()
   const [titre, setTitre]       = useState(section?.titre_fr || '')
@@ -130,7 +141,11 @@ export default function SectionModal({ section, chapitreId, parentSectionId, cha
             <div className="form-group">
               <label>Chapitre</label>
               <select className="form-select" value={targetChapitreId} onChange={e => setTargetChapitreId(e.target.value)}>
-                {chapitres.map(c => <option key={c.id} value={c.id}>{c.titre_fr}</option>)}
+                {groupByMatiere(chapitres, matieresById).map(([label, chs]) => (
+                  <optgroup key={label} label={label}>
+                    {chs.map(c => <option key={c.id} value={c.id}>{c.titre_fr}</option>)}
+                  </optgroup>
+                ))}
               </select>
               {chapitreChanged && (
                 <small style={{ color: '#DC2626', fontSize: '0.72rem', display: 'block', marginTop: '0.3rem' }}>

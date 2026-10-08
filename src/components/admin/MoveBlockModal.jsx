@@ -2,8 +2,19 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useOverlayClose } from '../../lib/useOverlayClose'
 
+// Les chapitres passés ici couvrent toutes les matières (un chapitre peut être partagé
+// entre plusieurs) — on les groupe par matière pour la lisibilité du <select>.
+function groupByMatiere(chapitres, matieresById) {
+  const groups = {}
+  for (const c of chapitres) {
+    const label = (c.matiere_ids || []).map(id => matieresById?.[id]).filter(Boolean).join(' / ') || 'Autre'
+    ;(groups[label] ||= []).push(c)
+  }
+  return Object.entries(groups)
+}
+
 export default function MoveBlockModal({
-  chapitres, currentChapitreId, currentSectionId, onClose, onConfirm, showToast,
+  chapitres, matieresById, currentChapitreId, currentSectionId, onClose, onConfirm, showToast,
   title = 'Déplacer le bloc', requireBlocsType = true,
 }) {
   const overlayClose = useOverlayClose(onClose)
@@ -58,7 +69,11 @@ export default function MoveBlockModal({
         <div className="form-group">
           <label>Chapitre</label>
           <select className="form-select" value={targetChapitreId} onChange={e => setTargetChapitreId(e.target.value)}>
-            {chapitres.map(c => <option key={c.id} value={c.id}>{c.titre_fr}</option>)}
+            {groupByMatiere(chapitres, matieresById).map(([label, chs]) => (
+              <optgroup key={label} label={label}>
+                {chs.map(c => <option key={c.id} value={c.id}>{c.titre_fr}</option>)}
+              </optgroup>
+            ))}
           </select>
         </div>
         <div className="form-group">

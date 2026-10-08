@@ -171,7 +171,7 @@ function FileBlockEditor({ block, onChange, showToast }) {
   )
 }
 
-export default function SectionBlocksEditor({ draft, onChange, showToast, revealProps, chapitres, chapitreId, sectionId, onMoveBlock }) {
+export default function SectionBlocksEditor({ draft, onChange, showToast, revealProps, chapitres, matieresById, chapitreId, sectionId, onMoveBlock }) {
   const blocks = draft.blocks || []
   const { activeClasseId, myClasses, revealedBlocIds, onChangeActiveClasse, onToggleReveal } = revealProps || {}
   const [movingBlock, setMovingBlock] = useState(null)
@@ -266,6 +266,7 @@ export default function SectionBlocksEditor({ draft, onChange, showToast, reveal
       {movingBlock && (
         <MoveBlockModal
           chapitres={chapitres}
+          matieresById={matieresById}
           currentChapitreId={chapitreId}
           currentSectionId={sectionId}
           onClose={() => setMovingBlock(null)}

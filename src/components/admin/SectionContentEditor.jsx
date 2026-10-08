@@ -3,12 +3,12 @@ import StringListEditor from './StringListEditor'
 import MiniRichEditor from './MiniRichEditor'
 import SectionBlocksEditor from './SectionBlocksEditor'
 
-export default function SectionContentEditor({ type, draft, onChange, showToast, revealProps, chapitres, chapitreId, sectionId, onMoveBlock }) {
+export default function SectionContentEditor({ type, draft, onChange, showToast, revealProps, chapitres, matieresById, chapitreId, sectionId, onMoveBlock }) {
   if (type === 'blocs') {
     return (
       <SectionBlocksEditor
         draft={draft} onChange={onChange} showToast={showToast} revealProps={revealProps}
-        chapitres={chapitres} chapitreId={chapitreId} sectionId={sectionId} onMoveBlock={onMoveBlock}
+        chapitres={chapitres} matieresById={matieresById} chapitreId={chapitreId} sectionId={sectionId} onMoveBlock={onMoveBlock}
       />
     )
   }

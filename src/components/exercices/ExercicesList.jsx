@@ -31,16 +31,24 @@ export default function ExercicesList({ sectionId, chapitreId, matiereId, showTo
   const [previewExercice, setPreviewExercice] = useState(null)
   const [movingExercice, setMovingExercice]   = useState(null)
   const [chapitres, setChapitres]             = useState([])
+  const [matieresById, setMatieresById]       = useState({})
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   useEffect(() => { load() }, [sectionId])
 
+  // Tous les chapitres, toutes matières — un chapitre peut être partagé entre plusieurs
+  // matières/filières, on veut pouvoir y déplacer un exercice même depuis une autre matière.
   useEffect(() => {
     if (!editable) return
-    supabase.from('chapitres').select('id, titre_fr').contains('matiere_ids', [matiereId]).order('ordre')
-      .then(({ data, error }) => { if (!error) setChapitres(data || []) })
-  }, [editable, matiereId])
+    Promise.all([
+      supabase.from('chapitres').select('id, titre_fr, matiere_ids').order('ordre'),
+      supabase.from('matieres').select('id, nom'),
+    ]).then(([{ data: chData, error: chErr }, { data: matData, error: matErr }]) => {
+      if (!chErr) setChapitres(chData || [])
+      if (!matErr) setMatieresById(Object.fromEntries((matData || []).map(m => [m.id, m.nom])))
+    })
+  }, [editable])
 
   async function handleMoveExercice(ex, toChapitreId, toSectionId) {
     try {
@@ -212,6 +220,7 @@ export default function ExercicesList({ sectionId, chapitreId, matiereId, showTo
           title="Déplacer l'exercice"
           requireBlocsType={false}
           chapitres={chapitres}
+          matieresById={matieresById}
           currentChapitreId={chapitreId}
           currentSectionId={sectionId}
           onClose={() => setMovingExercice(null)}
