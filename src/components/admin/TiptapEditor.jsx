@@ -185,6 +185,18 @@ export default function TiptapEditor({ content, onChange, showToast }) {
           ))}
         </div>
       </BubbleMenu>
+      <BubbleMenu editor={editor} shouldShow={({ editor }) => editor.isActive('fraction')}>
+        <div className="tiptap-image-size-menu">
+          <FractionMenu
+            label="✏️ Modifier"
+            buttonTitle="Modifier la fraction"
+            confirmLabel="Mettre à jour"
+            initialNum={editor.getAttributes('fraction').num}
+            initialDen={editor.getAttributes('fraction').den}
+            onInsert={(num, den) => editor.chain().focus().updateAttributes('fraction', { num, den }).run()}
+          />
+        </div>
+      </BubbleMenu>
       <EditorContent editor={editor} className="tiptap-editor" />
     </div>
   )
