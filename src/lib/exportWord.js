@@ -35,6 +35,14 @@ function runsFromInline(node, marks = {}) {
     if (tag === 'em' || tag === 'i') nextMarks.italics = true
     if (tag === 'u') nextMarks.underline = {}
     if (tag === 's' || tag === 'strike') nextMarks.strike = true
+    if (tag === 'span' && child.classList.contains('fraction')) {
+      // Docx ne supporte pas nativement une fraction empilée avec barre horizontale sans
+      // passer par OMML (bien plus complexe) — on dégrade en texte "num/den" lisible.
+      const num = child.querySelector('.fraction-num')?.textContent || ''
+      const den = child.querySelector('.fraction-den')?.textContent || ''
+      runs.push(new TextRun({ text: `${num}/${den}`, ...marks }))
+      return
+    }
     if (tag === 'span') {
       const hex = child.style?.color && rgbToHex(child.style.color)
       if (hex) nextMarks.color = hex

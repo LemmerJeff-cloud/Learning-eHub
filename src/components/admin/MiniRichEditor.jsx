@@ -14,6 +14,8 @@ import { uploadContentImage, uploadContentFile } from '../../lib/upload'
 import { FontSize } from './FontSizeExtension'
 import { ResizableImage, IMAGE_SIZE_OPTIONS } from './ResizableImageExtension'
 import { ArrowInputRule } from './ArrowInputRule'
+import { Fraction } from './FractionExtension'
+import FractionMenu from './FractionMenu'
 
 const FONT_SIZES = [
   { label: 'Petit', value: '0.85em' },
@@ -41,6 +43,7 @@ export default function MiniRichEditor({ content, onChange, showToast }) {
       TableRow,
       TableHeader,
       TableCell,
+      Fraction,
     ],
     content: content || '',
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
@@ -94,6 +97,7 @@ export default function MiniRichEditor({ content, onChange, showToast }) {
         <button type="button" className={editor.isActive('underline') ? 'active' : ''} onClick={() => editor.chain().focus().toggleUnderline().run()}><u>U</u></button>
         <button type="button" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insérer un tableau">▦</button>
         <button type="button" className={editor.isActive('link') ? 'active' : ''} onClick={openLinkInput} title="Insérer un lien">🔗</button>
+        <FractionMenu onInsert={(num, den) => editor.chain().focus().insertContent({ type: 'fraction', attrs: { num, den } }).run()} />
         <input
           type="color"
           className="tiptap-color-input"

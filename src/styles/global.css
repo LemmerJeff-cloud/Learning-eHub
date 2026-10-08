@@ -749,6 +749,14 @@ body {
    (curseur contenteditable mis à part) — min-height force l'espace visuel voulu. */
 .tiptap-editor p:empty,
 .html-content p:empty { min-height: 1.4em; }
+
+.fraction {
+  display: inline-flex; flex-direction: column; align-items: center;
+  vertical-align: middle; text-align: center; font-size: 0.85em;
+  line-height: 1.2; margin: 0 0.15em; white-space: nowrap;
+}
+.fraction-num { border-bottom: 1px solid currentColor; padding: 0 0.2em; }
+.fraction-den { padding: 0 0.2em; }
 .tiptap-editor img,
 .html-content img { max-width: 100%; height: auto; border-radius: var(--radius); }
 .tiptap-editor table,
