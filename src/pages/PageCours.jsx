@@ -758,6 +758,9 @@ function SectionBody({ sec, canEdit = false, revealedBlocIds, onToggleReveal }) 
       {(c.blocks || []).map(block => {
         if (!block.masquable) return <BlockBody key={block.id} block={block} />
         const isRevealed = !revealedBlocIds || revealedBlocIds.has(block.id)
+        // Le contenu masqué reste caché même pour l'enseignant en navigation normale (pas en
+        // mode édition) : le cours est souvent projeté au beamer devant la classe, afficher le
+        // contenu réel côté enseignant le révélerait quand même à l'écran.
         if (canEdit) return (
           <div key={block.id} style={{ position: 'relative', border: '1px dashed var(--border)', borderRadius: 'var(--radius)', padding: '0.75rem', marginBottom: '1rem' }}>
             <button
@@ -768,7 +771,11 @@ function SectionBody({ sec, canEdit = false, revealedBlocIds, onToggleReveal }) 
             >
               {isRevealed ? '🔓 Révélé — cliquer pour re-masquer' : '🔒 Masqué — cliquer pour révéler'}
             </button>
-            <BlockBody block={block} />
+            {isRevealed ? <BlockBody block={block} /> : (
+              <p style={{ fontStyle: 'italic', color: 'var(--text-3)', margin: 0 }}>
+                🔒 Contenu masqué pour les élèves (y compris au beamer) — cliquez ci-dessus pour révéler.
+              </p>
+            )}
           </div>
         )
         if (!isRevealed) return (
