@@ -39,6 +39,8 @@ export default function PageCours({ matiereId, showToast }) {
   const [myClasses, setMyClasses]         = useState([])
   const [activeClasseId, setActiveClasseId] = useState('')
   const [revealedBlocIds, setRevealedBlocIds] = useState(new Set())
+  const [allChapitres, setAllChapitres]   = useState([]) // tous les chapitres, toutes matières — pour les sélecteurs "déplacer vers"
+  const [matieresById, setMatieresById]   = useState({})
 
   const [editMode, setEditMode]         = useState(false)
   const [chapitreModal, setChapitreModal] = useState(null) // null | 'new' | chapitre
@@ -53,6 +55,23 @@ export default function PageCours({ matiereId, showToast }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   useEffect(() => { if (matiereId) loadChapitres() }, [visibleFilieres, profile, matiereId])
+
+  // Les chapitres cibles d'un déplacement (section/partie/bloc/exercice) ne doivent pas se
+  // limiter à la matière courante : un chapitre peut être partagé entre plusieurs matières/
+  // filières (ex. ACENT 3CN et ENTRA 2TPCM), et on veut pouvoir y déplacer du contenu même
+  // depuis une autre matière.
+  useEffect(() => {
+    if (!profile || !canEdit()) return
+    Promise.all([
+      supabase.from('chapitres').select('*').order('ordre'),
+      supabase.from('matieres').select('id, nom'),
+    ]).then(([{ data: chData, error: chErr }, { data: matData, error: matErr }]) => {
+      if (chErr) { showToast(chErr.message, 'error'); return }
+      if (matErr) { showToast(matErr.message, 'error'); return }
+      setAllChapitres(chData || [])
+      setMatieresById(Object.fromEntries((matData || []).map(m => [m.id, m.nom])))
+    })
+  }, [profile])
 
   useEffect(() => {
     if (!profile || !canEdit()) return
@@ -208,7 +227,12 @@ export default function PageCours({ matiereId, showToast }) {
   function handleSectionMoved(newChapitreId, newParentId) {
     refreshSidebar()
     const ch = chapitres.find(c => c.id === newChapitreId)
-    if (!ch) return
+    if (!ch) {
+      // Déplacé vers un chapitre d'une autre matière : cette page (scopée à la matière
+      // courante) ne peut pas y naviguer — on revient simplement sur le chapitre d'origine.
+      if (currentCh) goChapitre()
+      return
+    }
     if (newParentId) openSection(newChapitreId, newParentId)
     else openChapitre(ch)
   }
@@ -284,6 +308,68 @@ export default function PageCours({ matiereId, showToast }) {
       showToast(err.message || 'Erreur', 'error')
     } finally {
       setConfirmDelete(null)
+    }
+  }
+
+  // Copie une sections_cours (contenu, exercices/exercice_blocks compris) sous un nouvel
+  // id. `newParentId`/`newChapitreId` permettent de la rattacher ailleurs que l'original
+  // (utilisé pour dupliquer récursivement les parties d'une section dupliquée).
+  async function duplicateRow(row, { newParentId = row.parent_section_id, newChapitreId = row.chapitre_id, ordreOverride } = {}) {
+    const newId = crypto.randomUUID()
+    // `parties` est une annotation purement côté client ajoutée par openChapitre() pour
+    // l'aperçu dans la vue chapitre — ce n'est pas une colonne de sections_cours.
+    const { id, created_at, updated_at, parties: _parties, ...rest } = row
+    const { error } = await supabase.from('sections_cours').insert({
+      ...rest, id: newId, chapitre_id: newChapitreId, parent_section_id: newParentId,
+      ordre: ordreOverride ?? row.ordre, titre_fr: `${row.titre_fr} (copie)`,
+    })
+    if (error) throw error
+
+    const { data: blocks } = await supabase.from('exercice_blocks').select('*').eq('section_id', row.id)
+    const blockIdMap = {}
+    for (const b of blocks || []) {
+      const newBlockId = crypto.randomUUID()
+      blockIdMap[b.id] = newBlockId
+      const { id: bId, created_at: bc, updated_at: bu, ...bRest } = b
+      const { error: bErr } = await supabase.from('exercice_blocks').insert({ ...bRest, id: newBlockId, section_id: newId, chapitre_id: newChapitreId })
+      if (bErr) throw bErr
+    }
+
+    const { data: exs } = await supabase.from('exercices').select('*').eq('section_id', row.id)
+    for (const ex of exs || []) {
+      const { id: exId, created_at: ec, updated_at: eu, ...exRest } = ex
+      const { error: exErr } = await supabase.from('exercices').insert({
+        ...exRest, id: crypto.randomUUID(), section_id: newId, chapitre_id: newChapitreId,
+        block_id: ex.block_id ? blockIdMap[ex.block_id] : null,
+      })
+      if (exErr) throw exErr
+    }
+    return newId
+  }
+
+  async function handleDuplicateSection(s) {
+    try {
+      await backupChapitre(currentCh.id, `avant duplication de "${s.titre_fr}"`, user.id)
+      const { data: maxRows } = await supabase.from('sections_cours')
+        .select('ordre').eq('chapitre_id', currentCh.id)
+        [s.parent_section_id ? 'eq' : 'is']('parent_section_id', s.parent_section_id || null)
+        .order('ordre', { ascending: false }).limit(1)
+      const ordre = (maxRows?.[0]?.ordre ?? -1) + 1
+      const newId = await duplicateRow(s, { ordreOverride: ordre })
+
+      if (!s.parent_section_id) {
+        const { data: childParties } = await supabase.from('sections_cours').select('*').eq('parent_section_id', s.id).order('ordre')
+        for (const p of childParties || []) {
+          await duplicateRow(p, { newParentId: newId })
+        }
+      }
+
+      showToast(s.parent_section_id ? 'Partie dupliquée' : 'Section dupliquée', 'success')
+      if (s.parent_section_id) await loadParties(s.parent_section_id)
+      else openChapitre(currentCh)
+      refreshSidebar()
+    } catch (err) {
+      showToast(err.message || 'Erreur', 'error')
     }
   }
 
@@ -484,6 +570,7 @@ export default function PageCours({ matiereId, showToast }) {
                   editMode={editMode}
                   onOpen={() => openSection(currentCh.id, s.id)}
                   onEdit={() => setSectionModal(s)}
+                  onDuplicate={() => handleDuplicateSection(s)}
                   onDelete={() => setConfirmDelete({ type: 'section', item: s })}
                 />
                 {s.parties?.length > 0 && (
@@ -516,7 +603,8 @@ export default function PageCours({ matiereId, showToast }) {
         <SectionModal
           section={sectionModal === 'new' ? null : sectionModal}
           chapitreId={currentCh.id}
-          chapitres={chapitres}
+          chapitres={allChapitres}
+          matieresById={matieresById}
           onClose={() => setSectionModal(null)}
           onSaved={() => { openChapitre(currentCh); refreshSidebar() }}
           onMoved={handleSectionMoved}
@@ -602,7 +690,8 @@ export default function PageCours({ matiereId, showToast }) {
                     onChangeActiveClasse: setActiveClasseId,
                     onToggleReveal: toggleReveal,
                   }}
-                  chapitres={chapitres}
+                  chapitres={allChapitres}
+                  matieresById={matieresById}
                   chapitreId={currentCh.id}
                   sectionId={openRow.id}
                   onMoveBlock={handleMoveBlock}
@@ -645,6 +734,7 @@ export default function PageCours({ matiereId, showToast }) {
                         editMode={editMode}
                         onOpen={() => openPartie(s.id)}
                         onEdit={() => setSectionModal(s)}
+                        onDuplicate={() => handleDuplicateSection(s)}
                         onDelete={() => setConfirmDelete({ type: 'section', item: s })}
                       />
                     ))}
@@ -674,7 +764,8 @@ export default function PageCours({ matiereId, showToast }) {
             section={typeof sectionModal === 'string' ? null : sectionModal}
             chapitreId={currentCh.id}
             parentSectionId={sectionModal === 'new-partie' ? currentSec.id : null}
-            chapitres={chapitres}
+            chapitres={allChapitres}
+            matieresById={matieresById}
             onClose={() => setSectionModal(null)}
             onSaved={async () => {
               refreshSidebar()

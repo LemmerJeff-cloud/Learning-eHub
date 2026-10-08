@@ -2,7 +2,7 @@ import React from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-export default function SortableSectionRow({ section, index, editMode, onOpen, onEdit, onDelete }) {
+export default function SortableSectionRow({ section, index, editMode, onOpen, onEdit, onDuplicate, onDelete }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id })
 
   const style = {
@@ -30,6 +30,7 @@ export default function SortableSectionRow({ section, index, editMode, onOpen, o
       {editMode ? (
         <span style={{ display: 'flex', gap: '0.35rem' }}>
           <button className="icon-btn" onClick={e => { e.stopPropagation(); onEdit() }} title="Modifier">✏️</button>
+          {onDuplicate && <button className="icon-btn" onClick={e => { e.stopPropagation(); onDuplicate() }} title="Dupliquer">⧉</button>}
           <button className="icon-btn danger" onClick={e => { e.stopPropagation(); onDelete() }} title="Supprimer">🗑️</button>
         </span>
       ) : (
