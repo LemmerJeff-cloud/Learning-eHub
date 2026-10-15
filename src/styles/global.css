@@ -557,6 +557,26 @@ body {
 .exercice-result.incorrect .exercice-result-status { color: #DC2626; }
 .exercice-result.pending   .exercice-result-status { color: #D4780A; }
 
+/* Les exercices interactifs (grilles de catégorisation, tableaux de calcul, journal…)
+   gagnent à être plus larges que la colonne de texte (.main-content est limitée à 1040px).
+   On les laisse déborder symétriquement, mais seulement de l'espace réellement libre.
+   Au-dessus de 1400px la sidebar (220px) fait partie du flex layout, donc l'espace libre
+   se calcule par rapport à 220+1040=1260px. En dessous de 1400px la sidebar passe en
+   position:fixed (tiroir mobile/tablette) et sort du flux : .main-content occupe alors
+   toute la largeur de la fenêtre, donc l'espace libre se calcule par rapport à 1040px
+   seul. Sans cette distinction le débordement restait à 0 sur beaucoup de fenêtres
+   réelles (< 1400px), ce qui rendait le changement invisible. */
+.exercices-block {
+  --exo-breakout: clamp(0px, (100vw - 1260px) / 2, 10rem);
+  margin-left: calc(-1 * var(--exo-breakout));
+  margin-right: calc(-1 * var(--exo-breakout));
+}
+@media (max-width: 1400px) {
+  .exercices-block {
+    --exo-breakout: clamp(0px, (100vw - 1040px) / 2, 10rem);
+  }
+}
+
 .exercice-feedback { padding: 0.6rem 0.85rem; border-radius: var(--radius); font-size: 0.82rem; margin-top: 0.6rem; }
 .exercice-feedback.faux        { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.25); color: #7F1D1D; }
 .exercice-feedback.hint        { background: rgba(27,42,107,0.05); border: 1px solid rgba(27,42,107,0.15); color: var(--navy); }
@@ -586,6 +606,10 @@ body {
   font-size: 1.1rem; margin-bottom: 1.5rem;
   font-family: var(--font-display); font-weight: 800; color: var(--navy);
 }
+
+/* L'aperçu d'exercice fait tourner le même ExerciceRunner que la page (grilles, tableaux…),
+   le modal générique à 400px (pensé pour des petits formulaires) le rend illisible. */
+.exercice-preview-modal { max-width: 1100px; }
 
 /* ── TOAST ───────────────────────────────────────────────────── */
 .toast {

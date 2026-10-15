@@ -6,7 +6,7 @@ export default function ExercicePreview({ exercice, onClose }) {
   const overlayClose = useOverlayClose(onClose)
   return (
     <div className="modal-overlay open" {...overlayClose}>
-      <div className="modal">
+      <div className="modal exercice-preview-modal">
         <button className="modal-close" onClick={onClose}>✕</button>
         <h2>{exercice.titre}</h2>
         <div className="html-content" style={{ fontSize: '0.85rem', marginBottom: '1rem' }} dangerouslySetInnerHTML={{ __html: exercice.enonce }} />

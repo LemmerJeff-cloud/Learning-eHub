@@ -121,7 +121,7 @@ export default function ExercicesList({ sectionId, chapitreId, matiereId, showTo
   if (merged.length === 0 && !editable) return null
 
   return (
-    <div className="cours-section-block" style={{ marginTop: '1.5rem' }}>
+    <div className="cours-section-block exercices-block" style={{ marginTop: '1.5rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
         <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--navy)' }}>📝 Exercices</h3>
         {editable && (
