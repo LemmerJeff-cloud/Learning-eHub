@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { sanitizeFilename } from '../../lib/upload'
 import ConfirmModal from '../admin/ConfirmModal'
 
 const BUCKET = 'espace-fichiers'
@@ -66,7 +67,7 @@ export default function EspaceFichiers({ entrepriseId, user, profile, showToast 
     if (!file) return
     setUploading(true)
     try {
-      const path_ = `${entrepriseId}/${Date.now()}-${file.name}`
+      const path_ = `${entrepriseId}/${Date.now()}-${sanitizeFilename(file.name)}`
       const { error: upErr } = await supabase.storage.from(BUCKET).upload(path_, file)
       if (upErr) throw upErr
       const { error: dbErr } = await supabase.from('espace_fichiers').insert({

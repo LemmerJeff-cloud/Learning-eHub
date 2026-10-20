@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
+import { sanitizeFilename } from '../lib/upload'
 
 const BUCKET = 'entreprises-assets'
 
@@ -188,7 +189,7 @@ function EntrepriseProfilForm({ entreprise, profil, onCancel, onSaved, showToast
     if (!file) return
     setUploadingLogo(true)
     try {
-      const path = `${entreprise.id}/logo-${Date.now()}-${file.name}`
+      const path = `${entreprise.id}/logo-${Date.now()}-${sanitizeFilename(file.name)}`
       const { error } = await supabase.storage.from(BUCKET).upload(path, file)
       if (error) throw error
       setLogoChemin(path)
@@ -205,7 +206,7 @@ function EntrepriseProfilForm({ entreprise, profil, onCancel, onSaved, showToast
     if (!file) return
     setUploadingCatalogue(true)
     try {
-      const path = `${entreprise.id}/catalogue-${Date.now()}-${file.name}`
+      const path = `${entreprise.id}/catalogue-${Date.now()}-${sanitizeFilename(file.name)}`
       const { error } = await supabase.storage.from(BUCKET).upload(path, file)
       if (error) throw error
       setCatalogueChemin(path)

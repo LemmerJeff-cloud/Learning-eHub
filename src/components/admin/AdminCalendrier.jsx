@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/AuthContext'
+import { sanitizeFilename } from '../../lib/upload'
 import ConfirmModal from './ConfirmModal'
 import FiliereCheckboxes from './FiliereCheckboxes'
 import LyceeCheckboxes from './LyceeCheckboxes'
@@ -187,7 +188,7 @@ function CalendrierModal({ item, userId, onClose, onSaved, showToast }) {
     if (!file) return
     setUploading(true)
     try {
-      const path = `calendrier/${Date.now()}-${file.name}`
+      const path = `calendrier/${Date.now()}-${sanitizeFilename(file.name)}`
       const { error } = await supabase.storage.from(BUCKET).upload(path, file)
       if (error) throw error
       setFichiers([...fichiers, { nom: file.name, chemin: path }])

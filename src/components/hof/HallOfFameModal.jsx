@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { sanitizeFilename } from '../../lib/upload'
 import { useOverlayClose } from '../../lib/useOverlayClose'
 
 const BUCKET = 'hall-of-fame'
@@ -22,7 +23,7 @@ export default function HallOfFameModal({ entry, userId, onClose, onSaved, showT
     if (!file) return
     setUploadingImage(true)
     try {
-      const path = `images/${Date.now()}-${file.name}`
+      const path = `images/${Date.now()}-${sanitizeFilename(file.name)}`
       const { error } = await supabase.storage.from(BUCKET).upload(path, file)
       if (error) throw error
       setImageUrl(path)
@@ -39,7 +40,7 @@ export default function HallOfFameModal({ entry, userId, onClose, onSaved, showT
     if (!file) return
     setUploadingFichier(true)
     try {
-      const path = `fichiers/${Date.now()}-${file.name}`
+      const path = `fichiers/${Date.now()}-${sanitizeFilename(file.name)}`
       const { error } = await supabase.storage.from(BUCKET).upload(path, file)
       if (error) throw error
       setFichiers([...fichiers, { nom: file.name, chemin: path }])

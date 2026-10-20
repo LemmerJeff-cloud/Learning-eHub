@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/AuthContext'
+import { sanitizeFilename } from '../../lib/upload'
 import ConfirmModal from './ConfirmModal'
 import FiliereCheckboxes from './FiliereCheckboxes'
 import LyceeCheckboxes from './LyceeCheckboxes'
@@ -132,7 +133,7 @@ function ActualiteModal({ actualite, userId, onClose, onSaved, showToast }) {
     if (!file) return
     setUploading(true)
     try {
-      const path = `actualites/${Date.now()}-${file.name}`
+      const path = `actualites/${Date.now()}-${sanitizeFilename(file.name)}`
       const { error } = await supabase.storage.from(BUCKET).upload(path, file)
       if (error) throw error
       setFichiers([...fichiers, { nom: file.name, chemin: path }])

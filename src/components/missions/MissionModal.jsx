@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { sanitizeFilename } from '../../lib/upload'
 import { useOverlayClose } from '../../lib/useOverlayClose'
 
 const BUCKET = 'missions-fichiers'
@@ -29,7 +30,7 @@ export default function MissionModal({ mission, matiereId, userId, onClose, onSa
   }, [])
 
   async function uploadFile(missionId) {
-    const path = `${missionId}/consigne/${Date.now()}-${file.name}`
+    const path = `${missionId}/consigne/${Date.now()}-${sanitizeFilename(file.name)}`
     const { error } = await supabase.storage.from(BUCKET).upload(path, file)
     if (error) throw error
     return path
