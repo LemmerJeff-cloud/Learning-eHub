@@ -2118,3 +2118,13 @@ insert into exercices (id, section_id, chapitre_id, titre, type, enonce, options
 -- de cette nouvelle colonne).
 alter table sections_cours add column if not exists parent_section_id uuid references sections_cours(id) on delete cascade;
 create index on sections_cours(parent_section_id);
+
+-- ── enseignant_entreprises : RLS activé sans AUCUNE policy (2026-10-20) ───────────
+-- Même bug que enseignant_classes/classes/entreprises/missions/chapitres, mais jamais
+-- corrigé pour cette table — verrouillée pour tout le monde, y compris l'admin.
+-- Bloquait l'ajout d'un enseignant à une entreprise ("new row violates row-level
+-- security policy") depuis l'UI ajoutée dans AdminEntreprises.jsx.
+create policy "enseignant_entreprises_read" on enseignant_entreprises
+  for select using (true);
+create policy "enseignant_entreprises_write" on enseignant_entreprises
+  for all using (my_role() = 'admin');
