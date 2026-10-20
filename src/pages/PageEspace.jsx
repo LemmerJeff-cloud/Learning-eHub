@@ -5,7 +5,7 @@ import EspaceChat from '../components/espace/EspaceChat'
 import EspaceFichiers from '../components/espace/EspaceFichiers'
 
 export default function PageEspace({ showToast }) {
-  const { user, profile, canEdit } = useAuth()
+  const { user, profile, canEdit, isAdmin } = useAuth()
   const [entreprises, setEntreprises] = useState([])
   const [selected, setSelected]       = useState(null)
   const [tab, setTab]                 = useState('chat')
@@ -16,8 +16,10 @@ export default function PageEspace({ showToast }) {
     if (profile.entreprise) {
       setSelected(profile.entreprise)
       setLoading(false)
-    } else if (canEdit()) {
+    } else if (isAdmin()) {
       loadEntreprises()
+    } else if (canEdit()) {
+      loadMyEntreprises()
     } else {
       setLoading(false)
     }
@@ -28,6 +30,19 @@ export default function PageEspace({ showToast }) {
     const { data, error } = await supabase.from('entreprises').select('id, nom').order('nom')
     if (error) { showToast(error.message, 'error'); setLoading(false); return }
     setEntreprises(data)
+    setLoading(false)
+  }
+
+  // Un enseignant ne voit que les entreprises auxquelles il a été rattaché
+  // (enseignant_entreprises) — contrairement à l'admin qui voit tout.
+  async function loadMyEntreprises() {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('enseignant_entreprises')
+      .select('entreprise:entreprises(id, nom)')
+      .eq('enseignant_id', user.id)
+    if (error) { showToast(error.message, 'error'); setLoading(false); return }
+    setEntreprises((data || []).map(r => r.entreprise).filter(Boolean).sort((a, b) => a.nom.localeCompare(b.nom)))
     setLoading(false)
   }
 
@@ -47,7 +62,9 @@ export default function PageEspace({ showToast }) {
         <h2 className="page-heading">Espace équipe</h2>
         <p className="page-sub" style={{ marginBottom: '1.5rem' }}>Sélectionnez une entreprise.</p>
         {entreprises.length === 0 ? (
-          <div className="empty-state"><p>Aucune entreprise créée pour l'instant.</p></div>
+          <div className="empty-state">
+            <p>{isAdmin() ? 'Aucune entreprise créée pour l\'instant.' : 'Vous n\'êtes rattaché à aucune entreprise pour l\'instant.'}</p>
+          </div>
         ) : (
           <div className="tiles-grid">
             {entreprises.map(e => (

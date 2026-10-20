@@ -84,6 +84,46 @@ function EntrepriseModal({ entreprise, classes, onClose, onSaved, showToast }) {
   const [nom, setNom]         = useState(entreprise?.nom || '')
   const [classeId, setClasseId] = useState(entreprise?.classe_id || '')
   const [loading, setLoading] = useState(false)
+  const [enseignants, setEnseignants] = useState([])
+  const [staff, setStaff]             = useState([])
+  const [addingId, setAddingId]       = useState('')
+  const [loadingStaff, setLoadingStaff] = useState(!!entreprise)
+
+  // Le rattachement enseignant ↔ entreprise (many-to-many) n'existe que pour une
+  // entreprise déjà créée — on l'enregistre immédiatement (indépendamment du bouton
+  // "Enregistrer" qui ne porte que sur nom/classe), comme dans ClasseDetail.jsx.
+  useEffect(() => {
+    if (!entreprise) return
+    loadStaff()
+  }, [entreprise?.id])
+
+  async function loadStaff() {
+    setLoadingStaff(true)
+    const [{ data: ee, error: eeError }, { data: st, error: stError }] = await Promise.all([
+      supabase.from('enseignant_entreprises').select('enseignant:profiles(id, prenom, initiale, role)').eq('entreprise_id', entreprise.id),
+      supabase.from('profiles').select('id, prenom, initiale, role').in('role', ['enseignant', 'enseignant_guest', 'admin']).order('prenom'),
+    ])
+    if (eeError || stError) { showToast((eeError || stError).message, 'error'); setLoadingStaff(false); return }
+    setEnseignants((ee || []).map(r => r.enseignant).filter(Boolean))
+    setStaff(st || [])
+    setLoadingStaff(false)
+  }
+
+  async function addEnseignant(id) {
+    if (!id) return
+    const { error } = await supabase.from('enseignant_entreprises').insert({ enseignant_id: id, entreprise_id: entreprise.id })
+    setAddingId('')
+    if (error) { showToast(error.message, 'error'); return }
+    loadStaff()
+  }
+
+  async function removeEnseignant(id) {
+    const { error } = await supabase.from('enseignant_entreprises').delete().eq('enseignant_id', id).eq('entreprise_id', entreprise.id)
+    if (error) { showToast(error.message, 'error'); return }
+    loadStaff()
+  }
+
+  const availableStaff = staff.filter(s => !enseignants.some(e => e.id === s.id))
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -125,6 +165,49 @@ function EntrepriseModal({ entreprise, classes, onClose, onSaved, showToast }) {
               {classes.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
             </select>
           </div>
+
+          {!entreprise && (
+            <p style={{ color: 'var(--text-3)', fontSize: '0.78rem', marginTop: '-0.5rem', marginBottom: '1.1rem' }}>
+              Enregistrez d'abord l'entreprise, puis rouvrez-la (✏️) pour y rattacher des enseignants.
+            </p>
+          )}
+
+          {entreprise && (
+            <div className="form-group">
+              <label>Enseignants rattachés</label>
+              <p style={{ color: 'var(--text-3)', fontSize: '0.78rem', margin: '-0.3rem 0 0.6rem' }}>
+                Donne accès au chat et aux fichiers de l'espace équipe de cette entreprise. Un enseignant peut être rattaché à plusieurs entreprises.
+              </p>
+              {loadingStaff ? (
+                <p style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Chargement…</p>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                    {enseignants.length === 0 && (
+                      <span style={{ color: 'var(--text-3)', fontSize: '0.82rem' }}>Aucun enseignant rattaché.</span>
+                    )}
+                    {enseignants.map(en => (
+                      <span key={en.id} className="filiere-checkbox checked" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                        {en.prenom} {en.initiale}{en.role === 'admin' ? ' (admin)' : ''}
+                        <button
+                          type="button" onClick={() => removeEnseignant(en.id)}
+                          style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0, fontSize: '0.85rem' }}
+                          title="Retirer"
+                        >✕</button>
+                      </span>
+                    ))}
+                  </div>
+                  <select className="form-select" value={addingId} onChange={e => addEnseignant(e.target.value)} style={{ width: 'auto' }}>
+                    <option value="">+ Ajouter un enseignant</option>
+                    {availableStaff.map(s => (
+                      <option key={s.id} value={s.id}>{s.prenom} {s.initiale}{s.role === 'admin' ? ' (admin)' : ''}</option>
+                    ))}
+                  </select>
+                </>
+              )}
+            </div>
+          )}
+
           <button className="btn-primary" type="submit" disabled={loading}>
             {loading ? 'Enregistrement…' : 'Enregistrer'}
           </button>
