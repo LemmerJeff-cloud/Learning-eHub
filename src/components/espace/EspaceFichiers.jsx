@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { sanitizeFilename } from '../../lib/upload'
+import { downloadEntrepriseFilesBackup } from '../../lib/exportEspaceBackup'
 import ConfirmModal from '../admin/ConfirmModal'
 
 const BUCKET = 'espace-fichiers'
 
-export default function EspaceFichiers({ entrepriseId, user, profile, showToast }) {
+export default function EspaceFichiers({ entrepriseId, entrepriseNom, user, profile, showToast }) {
   const [path, setPath]           = useState([]) // [{id, nom}, ...] — [] = racine
   const [dossiers, setDossiers]   = useState([])
   const [fichiers, setFichiers]   = useState([])
   const [loading, setLoading]     = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [backingUp, setBackingUp] = useState(false)
   const [creatingDossier, setCreatingDossier] = useState(false)
   const [nouveauDossier, setNouveauDossier]   = useState('')
   const [confirmDelete, setConfirmDelete]     = useState(null) // { type: 'fichier'|'dossier', item }
@@ -84,6 +86,17 @@ export default function EspaceFichiers({ entrepriseId, user, profile, showToast 
     }
   }
 
+  async function handleBackup() {
+    setBackingUp(true)
+    try {
+      await downloadEntrepriseFilesBackup(entrepriseId, entrepriseNom)
+    } catch (err) {
+      showToast(err.message || 'Échec de la sauvegarde', 'error')
+    } finally {
+      setBackingUp(false)
+    }
+  }
+
   async function handleDownload(fichier) {
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(fichier.chemin, 60)
     if (error) { showToast(error.message, 'error'); return }
@@ -128,6 +141,9 @@ export default function EspaceFichiers({ entrepriseId, user, profile, showToast 
           <input type="file" style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
         </label>
         <button className="fic-btn" onClick={() => setCreatingDossier(true)}>📁 Nouveau dossier</button>
+        <button className="fic-btn" onClick={handleBackup} disabled={backingUp}>
+          {backingUp ? 'Sauvegarde…' : '⬇️ Backup (.zip)'}
+        </button>
       </div>
 
       {creatingDossier && (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import ConfirmModal from './ConfirmModal'
 import { useOverlayClose } from '../../lib/useOverlayClose'
+import { downloadAllEntreprisesFilesBackup } from '../../lib/exportEspaceBackup'
 
 export default function AdminEntreprises({ showToast }) {
   const [entreprises, setEntreprises] = useState([])
@@ -9,8 +10,20 @@ export default function AdminEntreprises({ showToast }) {
   const [loading, setLoading]         = useState(true)
   const [modal, setModal]             = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [backingUp, setBackingUp]     = useState(false)
 
   useEffect(() => { load() }, [])
+
+  async function handleBackupAll() {
+    setBackingUp(true)
+    try {
+      await downloadAllEntreprisesFilesBackup()
+    } catch (err) {
+      showToast(err.message || 'Échec de la sauvegarde', 'error')
+    } finally {
+      setBackingUp(false)
+    }
+  }
 
   async function load() {
     setLoading(true)
@@ -36,7 +49,10 @@ export default function AdminEntreprises({ showToast }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginBottom: '1rem' }}>
+        <button className="fic-btn" onClick={handleBackupAll} disabled={backingUp}>
+          {backingUp ? 'Sauvegarde…' : '⬇️ Backup fichiers (toutes entreprises)'}
+        </button>
         <button className="fic-btn" onClick={() => setModal('new')}>➕ Nouvelle entreprise</button>
       </div>
 

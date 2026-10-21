@@ -103,7 +103,7 @@ export default function PageEspace({ showToast }) {
 
       {tab === 'chat'
         ? <EspaceChat entrepriseId={selected.id} user={user} showToast={showToast} />
-        : <EspaceFichiers entrepriseId={selected.id} user={user} profile={profile} showToast={showToast} />}
+        : <EspaceFichiers entrepriseId={selected.id} entrepriseNom={selected.nom} user={user} profile={profile} showToast={showToast} />}
     </div>
   )
 }
