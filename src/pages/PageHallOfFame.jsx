@@ -18,6 +18,8 @@ export default function PageHallOfFame({ showToast }) {
   const [loading, setLoading] = useState(true)
   const [modal, setModal]     = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [filterType, setFilterType]   = useState('')
+  const [filterAnnee, setFilterAnnee] = useState('')
 
   useEffect(() => { load() }, [])
 
@@ -39,9 +41,13 @@ export default function PageHallOfFame({ showToast }) {
 
   if (loading) return <p style={{ color: 'var(--text-3)', padding: '2rem' }}>Chargement…</p>
 
+  const annees = [...new Set(entries.map(e => e.annee).filter(Boolean))].sort().reverse()
+  const filtersActive = filterType || filterAnnee
+  const filtered = entries.filter(e => (!filterType || e.type === filterType) && (!filterAnnee || e.annee === filterAnnee))
+
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', gap: '0.6rem', flexWrap: 'wrap' }}>
         <div>
           <h2 className="page-heading">🏆 Hall of Fame</h2>
           <p className="page-sub">Les meilleures entreprises d'entraînement.</p>
@@ -49,11 +55,25 @@ export default function PageHallOfFame({ showToast }) {
         {canEdit() && <button className="fic-btn" onClick={() => setModal('new')}>➕ Nouvelle entrée</button>}
       </div>
 
-      {entries.length === 0 ? (
-        <div className="empty-state"><p>Aucune entrée pour l'instant.</p></div>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+        <select className="form-select" value={filterType} onChange={e => setFilterType(e.target.value)} style={{ width: 'auto' }}>
+          <option value="">Tous les types</option>
+          {HOF_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </select>
+        <select className="form-select" value={filterAnnee} onChange={e => setFilterAnnee(e.target.value)} style={{ width: 'auto' }}>
+          <option value="">Toutes les années</option>
+          {annees.map(a => <option key={a} value={a}>{a}</option>)}
+        </select>
+        {filtersActive && (
+          <button className="icon-btn" title="Réinitialiser les filtres" onClick={() => { setFilterType(''); setFilterAnnee('') }}>✕</button>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="empty-state"><p>{entries.length === 0 ? "Aucune entrée pour l'instant." : 'Aucune entrée ne correspond à ces filtres.'}</p></div>
       ) : (
         <div className="tiles-grid">
-          {entries.map(entry => (
+          {filtered.map(entry => (
             <div key={entry.id} className="module-tile" style={{ cursor: 'default' }}>
               {entry.image_url ? (
                 <div style={{ width: '100%', height: '120px', borderRadius: 'var(--radius)', marginBottom: '0.6rem', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
