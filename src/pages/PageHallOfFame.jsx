@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
-import HallOfFameModal from '../components/hof/HallOfFameModal'
+import HallOfFameModal, { HOF_TYPES } from '../components/hof/HallOfFameModal'
 import ConfirmModal from '../components/admin/ConfirmModal'
+
+const HOF_TYPE_LABEL = Object.fromEntries(HOF_TYPES.map(t => [t.value, t.label]))
 
 const BUCKET = 'hall-of-fame'
 
@@ -57,6 +59,11 @@ export default function PageHallOfFame({ showToast }) {
                 <img src={publicUrl(entry.image_url)} alt="" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: 'var(--radius)', marginBottom: '0.6rem' }} />
               ) : (
                 <div className="tile-emoji">🏆</div>
+              )}
+              {HOF_TYPE_LABEL[entry.type] && (
+                <span className="status-badge inactive" style={{ marginBottom: '0.4rem', display: 'inline-flex' }}>
+                  {HOF_TYPE_LABEL[entry.type]}
+                </span>
               )}
               <h3>{entry.titre}</h3>
               {(entry.annee || entry.distinction) && (

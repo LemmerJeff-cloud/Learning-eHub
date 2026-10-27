@@ -5,9 +5,16 @@ import { useOverlayClose } from '../../lib/useOverlayClose'
 
 const BUCKET = 'hall-of-fame'
 
+export const HOF_TYPES = [
+  { value: 'start_up', label: 'Start Up' },
+  { value: 'mini_entreprise', label: 'Mini-entreprise' },
+  { value: 'entreprise_entrainement', label: "Entreprise d'entraînement" },
+]
+
 export default function HallOfFameModal({ entry, userId, onClose, onSaved, showToast }) {
   const overlayClose = useOverlayClose(onClose)
   const [titre, setTitre]             = useState(entry?.titre || '')
+  const [type, setType]               = useState(entry?.type || 'entreprise_entrainement')
   const [description, setDescription] = useState(entry?.description || '')
   const [annee, setAnnee]             = useState(entry?.annee || '')
   const [distinction, setDistinction] = useState(entry?.distinction || '')
@@ -64,7 +71,7 @@ export default function HallOfFameModal({ entry, userId, onClose, onSaved, showT
     if (!titre.trim()) return
     setLoading(true)
     try {
-      const payload = { titre, description, annee, distinction, image_url: imageUrl, fichiers }
+      const payload = { titre, type, description, annee, distinction, image_url: imageUrl, fichiers }
       if (entry) {
         const { error } = await supabase.from('hall_of_fame').update(payload).eq('id', entry.id)
         if (error) throw error
@@ -91,6 +98,12 @@ export default function HallOfFameModal({ entry, userId, onClose, onSaved, showT
           <div className="form-group">
             <label>Titre</label>
             <input className="form-input" value={titre} onChange={e => setTitre(e.target.value)} autoFocus />
+          </div>
+          <div className="form-group">
+            <label>Type</label>
+            <select className="form-select" value={type} onChange={e => setType(e.target.value)}>
+              {HOF_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
           </div>
           <div className="form-group">
             <label>Description</label>

@@ -2128,3 +2128,11 @@ create policy "enseignant_entreprises_read" on enseignant_entreprises
   for select using (true);
 create policy "enseignant_entreprises_write" on enseignant_entreprises
   for all using (my_role() = 'admin');
+
+-- ── hall_of_fame : type de programme JEL (2026-10-27) ─────────────────────────────
+-- Permet de distinguer Start Up, Mini-entreprise et Entreprise d'entraînement (même
+-- typologie de programmes que les sections "entreprises_entrainement"/"mini_entreprises"
+-- de la page Infos). Toutes les entrées existantes étaient des entreprises
+-- d'entraînement (seul programme présenté jusqu'ici dans le Hall of Fame).
+alter table hall_of_fame add column if not exists type text not null default 'entreprise_entrainement'
+  check (type in ('start_up', 'mini_entreprise', 'entreprise_entrainement'));
