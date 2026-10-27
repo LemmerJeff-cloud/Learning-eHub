@@ -56,7 +56,7 @@ export default function PageHallOfFame({ showToast }) {
           {entries.map(entry => (
             <div key={entry.id} className="module-tile" style={{ cursor: 'default' }}>
               {entry.image_url ? (
-                <div style={{ width: '100%', height: '120px', borderRadius: 'var(--radius)', marginBottom: '0.6rem', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: '120px', borderRadius: 'var(--radius)', marginBottom: '0.6rem', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                   <img src={publicUrl(entry.image_url)} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                 </div>
               ) : (
