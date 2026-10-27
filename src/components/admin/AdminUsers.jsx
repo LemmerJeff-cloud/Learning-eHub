@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { createUserAccount } from '../../lib/adminApi'
+import { createUserAccount, resetUserPassword } from '../../lib/adminApi'
 import ConfirmModal from './ConfirmModal'
 import { useOverlayClose } from '../../lib/useOverlayClose'
 
@@ -19,6 +19,7 @@ export default function AdminUsers({ showToast }) {
   const [loading, setLoading] = useState(true)
   const [modalUser, setModalUser] = useState(null) // null | 'new' | user
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [resettingUser, setResettingUser] = useState(null)
   const [filterLycee, setFilterLycee]         = useState('')
   const [filterAnnee, setFilterAnnee]         = useState('')
   const [filterClasse, setFilterClasse]       = useState('')
@@ -171,6 +172,7 @@ export default function AdminUsers({ showToast }) {
                 <td>{u.entreprise?.nom || '—'}</td>
                 <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                   <button className="icon-btn" onClick={() => setModalUser(u)} title="Modifier">✏️</button>
+                  <button className="icon-btn" style={{ marginLeft: '0.35rem' }} onClick={() => setResettingUser(u)} title="Réinitialiser le mot de passe">🔑</button>
                   <button className="icon-btn danger" style={{ marginLeft: '0.35rem' }} onClick={() => setConfirmDelete(u)} title="Retirer l'accès">🗑️</button>
                 </td>
               </tr>
@@ -178,6 +180,14 @@ export default function AdminUsers({ showToast }) {
           </tbody>
         </table>
       </div>
+
+      {resettingUser && (
+        <ResetPasswordModal
+          user={resettingUser}
+          onClose={() => setResettingUser(null)}
+          showToast={showToast}
+        />
+      )}
 
       {modalUser && (
         <UserModal
@@ -197,6 +207,75 @@ export default function AdminUsers({ showToast }) {
           onConfirm={() => handleDelete(confirmDelete)}
         />
       )}
+    </div>
+  )
+}
+
+function generateTempPassword() {
+  // Évite les caractères ambigus à l'oral/écrit quand on transmet le mot de passe (0/O, 1/l/I).
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+  let out = ''
+  for (let i = 0; i < 10; i++) out += chars[Math.floor(Math.random() * chars.length)]
+  return out
+}
+
+function ResetPasswordModal({ user, onClose, showToast }) {
+  const overlayClose = useOverlayClose(onClose)
+  const [password, setPassword] = useState(generateTempPassword)
+  const [loading, setLoading]   = useState(false)
+  const [done, setDone]         = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (password.length < 6) { showToast('Le mot de passe doit contenir au moins 6 caractères', 'error'); return }
+    setLoading(true)
+    try {
+      await resetUserPassword(user.id, password)
+      setDone(true)
+      showToast('Mot de passe réinitialisé', 'success')
+    } catch (err) {
+      showToast(err.message || 'Erreur', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="modal-overlay open" {...overlayClose}>
+      <div className="modal">
+        <button className="modal-close" onClick={onClose}>✕</button>
+        <h2>Réinitialiser le mot de passe</h2>
+        <p style={{ color: 'var(--text-3)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
+          {user.prenom} {user.initiale}{user.email ? ` — ${user.email}` : ''}
+        </p>
+
+        {done ? (
+          <>
+            <p style={{ fontSize: '0.85rem', marginBottom: '0.6rem' }}>
+              Nouveau mot de passe, à transmettre à l'utilisateur :
+            </p>
+            <input
+              className="form-input" readOnly value={password}
+              onFocus={e => e.target.select()}
+              style={{ fontFamily: 'monospace', fontSize: '1rem', marginBottom: '1.25rem' }}
+            />
+            <button className="btn-primary" type="button" onClick={onClose}>Fermer</button>
+          </>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Nouveau mot de passe</label>
+              <input
+                className="form-input" value={password} onChange={e => setPassword(e.target.value)}
+                style={{ fontFamily: 'monospace', fontSize: '1rem' }} autoFocus
+              />
+            </div>
+            <button className="btn-primary" type="submit" disabled={loading}>
+              {loading ? 'Réinitialisation…' : 'Réinitialiser'}
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   )
 }

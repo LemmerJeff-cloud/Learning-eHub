@@ -87,8 +87,11 @@ export function AuthProvider({ children }) {
   }
 
   async function requestPasswordReset(email) {
+    // L'app est servie sous le sous-dossier GitHub Pages /Learning-eHub/ (voir vite.config.js) :
+    // window.location.origin seul (sans le sous-dossier) renvoie vers la racine du domaine, où
+    // rien n'est hébergé — le lien de réinitialisation reçu par mail aboutissait donc à un 404.
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
+      redirectTo: `${window.location.origin}/Learning-eHub/`,
     })
     if (error) throw error
   }
