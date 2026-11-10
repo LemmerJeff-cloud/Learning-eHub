@@ -17,6 +17,7 @@ import { ResizableImage, IMAGE_SIZE_OPTIONS } from './ResizableImageExtension'
 import { ArrowInputRule } from './ArrowInputRule'
 import { Fraction } from './FractionExtension'
 import FractionMenu from './FractionMenu'
+import IconMenu from './IconMenu'
 
 const FONT_SIZES = [
   { label: 'Petit', value: '0.85em' },
@@ -126,6 +127,7 @@ export default function TiptapEditor({ content, onChange, showToast }) {
         <button type="button" className={editor.isActive('orderedList') ? 'active' : ''} onClick={() => editor.chain().focus().toggleOrderedList().run()}>1. Liste</button>
         <button type="button" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>▦ Tableau</button>
         <FractionMenu onInsert={(num, den) => editor.chain().focus().insertContent({ type: 'fraction', attrs: { num, den } }).run()} />
+        <IconMenu onInsert={char => editor.chain().focus().insertContent(char).run()} />
         <input
           type="color"
           className="tiptap-color-input"

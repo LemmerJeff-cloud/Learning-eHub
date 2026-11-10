@@ -816,6 +816,18 @@ body {
 }
 .tiptap-image-size-menu button:hover { background: var(--surface); color: var(--navy); }
 
+.tiptap-icon-menu {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; padding: 0.35rem;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12); width: 168px;
+}
+.tiptap-icon-menu button {
+  padding: 6px; border-radius: 4px; border: 1px solid transparent;
+  background: transparent; color: var(--text-2); font-size: 1rem;
+  cursor: pointer; font-family: var(--font);
+}
+.tiptap-icon-menu button:hover { background: var(--surface); color: var(--navy); }
+
 .tiptap-toolbar.mini { border-radius: var(--radius) var(--radius) 0 0; padding: 0.35rem; }
 .tiptap-editor.mini { min-height: 70px; padding: 0.7rem 0.9rem; }
 .mini-rich-editor { margin-bottom: 0; }
