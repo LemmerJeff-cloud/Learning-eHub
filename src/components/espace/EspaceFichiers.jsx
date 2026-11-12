@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { sanitizeFilename } from '../../lib/upload'
+import { downloadFromStorage } from '../../lib/download'
 import { downloadEntrepriseFilesBackup } from '../../lib/exportEspaceBackup'
 import ConfirmModal from '../admin/ConfirmModal'
 
@@ -98,9 +99,8 @@ export default function EspaceFichiers({ entrepriseId, entrepriseNom, user, prof
   }
 
   async function handleDownload(fichier) {
-    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(fichier.chemin, 60)
-    if (error) { showToast(error.message, 'error'); return }
-    window.open(data.signedUrl, '_blank')
+    const ok = await downloadFromStorage(BUCKET, fichier.chemin)
+    if (!ok) showToast('Échec du téléchargement', 'error')
   }
 
   async function handleDeleteFichier(fichier) {

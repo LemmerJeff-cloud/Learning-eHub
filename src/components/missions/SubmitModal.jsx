@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { sanitizeFilename } from '../../lib/upload'
+import { downloadFromStorage } from '../../lib/download'
 import { useOverlayClose } from '../../lib/useOverlayClose'
 
 const BUCKET = 'missions-fichiers'
@@ -12,9 +13,8 @@ export default function SubmitModal({ mission, existing, userId, onClose, onSave
   const [loading, setLoading]         = useState(false)
 
   async function handleDownload(chemin) {
-    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(chemin, 60)
-    if (error) return
-    window.open(data.signedUrl, '_blank')
+    const ok = await downloadFromStorage(BUCKET, chemin)
+    if (!ok) showToast?.('Échec du téléchargement', 'error')
   }
 
   async function handleSubmit(e) {

@@ -15,6 +15,8 @@ export default function MissionModal({ mission, matiereId, userId, onClose, onSa
   const [entrepriseId, setEntrepriseId] = useState(mission?.entreprise_id || '')
   const [classes, setClasses]         = useState([])
   const [entreprises, setEntreprises] = useState([])
+  const [matierePrefix, setMatierePrefix] = useState('')
+  const [showAllClasses, setShowAllClasses] = useState(false)
   const [file, setFile]               = useState(null)
   const [loading, setLoading]         = useState(false)
 
@@ -27,7 +29,18 @@ export default function MissionModal({ mission, matiereId, userId, onClose, onSa
       if (error) { showToast(error.message, 'error'); return }
       setEntreprises(data)
     })
-  }, [])
+    // Les matières sont nommées "<Classe> - <Matière>" (ex. "B1DiCo - ECOGEST") — on
+    // utilise ce préfixe pour ne proposer que la classe correspondant à la matière
+    // actuellement sélectionnée, et éviter qu'une mission se retrouve filée sous la
+    // mauvaise matière (invisible pour le prof tant qu'il n'a pas rebasculé sur celle-ci).
+    supabase.from('matieres').select('nom').eq('id', matiereId).single().then(({ data }) => {
+      if (data?.nom) setMatierePrefix(data.nom.split(' - ')[0].trim())
+    })
+  }, [matiereId])
+
+  const classesFiltrees = (showAllClasses || !matierePrefix)
+    ? classes
+    : classes.filter(c => c.label.startsWith(matierePrefix) || c.id === classeId)
 
   async function uploadFile(missionId) {
     const path = `${missionId}/consigne/${Date.now()}-${sanitizeFilename(file.name)}`
@@ -101,10 +114,24 @@ export default function MissionModal({ mission, matiereId, userId, onClose, onSa
               </label>
             </div>
             {cible === 'classe' ? (
-              <select className="form-select" value={classeId} onChange={e => setClasseId(e.target.value)}>
-                <option value="">— Choisir —</option>
-                {classes.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-              </select>
+              <>
+                <select className="form-select" value={classeId} onChange={e => setClasseId(e.target.value)}>
+                  <option value="">— Choisir —</option>
+                  {classesFiltrees.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                </select>
+                {matierePrefix && !showAllClasses && (
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-3)', marginTop: '0.35rem' }}>
+                    Seules les classes de « {matierePrefix} » sont proposées, pour que la mission reste visible dans cette matière.{' '}
+                    <button
+                      type="button"
+                      onClick={() => setShowAllClasses(true)}
+                      style={{ fontSize: '0.72rem', color: 'var(--navy)', background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', padding: 0 }}
+                    >
+                      Afficher toutes les classes
+                    </button>
+                  </p>
+                )}
+              </>
             ) : (
               <select className="form-select" value={entrepriseId} onChange={e => setEntrepriseId(e.target.value)}>
                 <option value="">— Choisir —</option>
